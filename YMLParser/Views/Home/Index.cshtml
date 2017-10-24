@@ -1,11 +1,31 @@
 ﻿@{
     ViewBag.Title = "Home Page";
 }
+<h2>Конвертировать XML</h2>
+<div class="col-md-12">
+    <ul class="nav nav-tabs">
+        <li role="presentation" class="active"><a href="#link" aria-controls="link" role="tab" data-toggle="tab">Ссылка</a></li>
+        <li role="presentation"><a href="#file" aria-controls="file" role="tab" data-toggle="tab">Файл</a></li>
+    </ul>
+    <div class="tab-content">
+        <div role="tabpanel" class="tab-pane active" id="link">
+            @using (Ajax.BeginForm("CreateXMLFromLink", "Home", new AjaxOptions { UpdateTargetId = "results" }, new { @class = "form-group" }))
+            {
+                <input type="text" class="form-control" id="form-group-input" name="link" placeholder="URL файла" style="margin-top: 10px;">
+                <input id="SubmitUrl" class ="btn btn-primary" type="submit" value="Отправить" style="margin-top: 10px;"/>
+            }
+        </div>
+        <div role="tabpanel" class="tab-pane" id="file">
+            @using (Ajax.BeginForm("CreateXMLFromFile", "Home", new AjaxOptions { UpdateTargetId = "results" }, new { @class = "form-group" }))
+            {
+                <input id="form-group-input-file" type="file" multiple="true" name="file" style="margin-top: 10px;"/>
+                <input id="Submitfile" class ="btn btn-primary" type="submit" value="Отправить" style="margin-top: 10px;"/>
+            }
+        </div>
+    </div>
 
-<div class="jumbotron">
-    <h1>ASP.NET</h1>
-    <p class="lead">ASP.NET is a free web framework for building great Web sites and Web applications using HTML, CSS and JavaScript.</p>
-    <p><a href="https://asp.net" class="btn btn-primary btn-lg">Learn more &raquo;</a></p>
+
+    <div id="results"></div>
 </div>
 
 <div class="row">
