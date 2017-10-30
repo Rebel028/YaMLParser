@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Web;
 using System.Web.Mvc;
 using System.Xml.Linq;
+using YMLParser.Models;
 
 namespace YMLParser.Controllers
 {
@@ -30,12 +32,22 @@ namespace YMLParser.Controllers
         }
 
         [HttpPost]
-        public ActionResult CreateXMLFromLink(string link)
+        public async Task<ActionResult> CreateXMLFromLink(string link)
         {
-            XDocument xdoc = XDocument.Load(link);
-            var Output = CreateDocument(xdoc);
+            //загружаем файл
+            System.Net.Http.HttpClient client = new System.Net.Http.HttpClient();
+            var response = await client.GetStreamAsync(link);
+            XDocument xdoc = XDocument.Load(response);
 
-            return PartialView("ConvertPartial");
+            //запускаем парсер
+            Parser parser = new Parser();
+            var output = parser.CreateDocument(xdoc);
+            //поучаем результат
+            FileOutput file = SaveFile(output);
+            file.Categories = parser.catDictionary;
+
+            //return File(file.Info.OpenRead(), file.FileType, file.FileName);
+            return PartialView("ConvertPartial", file);
         }
 
         [HttpPost]
@@ -43,25 +55,30 @@ namespace YMLParser.Controllers
         {
             if (Request.Files.Count > 0)
             {
-                if (Request.Files.Count==1)
+                if (Request.Files.Count == 1) // если один файл
                 {
-                    var file = Request.Files[0];
+                    var baseFile = Request.Files[0];
 
-                    var fileName = Path.GetFileName(file.FileName);
+                    var fileName = Path.GetFileName(baseFile.FileName);
                     if (fileName.ToLower().EndsWith(".xml"))
                     {
-                        var path = Path.Combine(Server.MapPath("~/Docs/"), fileName);
-                        file.SaveAs(path);
+                        var path = Path.Combine(Server.MapPath("~/App_Data/"), fileName);
+                        baseFile.SaveAs(path);
                         XDocument xdoc = XDocument.Load(path);
                         if (System.IO.File.Exists(path))
                         {
                             System.IO.File.Delete(path);
                         }
+                        Parser parser = new Parser();
+                        var output = parser.CreateDocument(xdoc);
+                        //поучаем результат
+                        FileOutput file = SaveFile(output);
+                        file.Categories = parser.catDictionary;
 
-                        var Output = CreateDocument(xdoc);                        
+                        return PartialView("ConvertPartial", file);
                     }
                 }
-                else
+                else // если больше
                 {
                     List<XDocument> files = new List<XDocument>();
                     foreach (HttpPostedFileBase file in Request.Files)
@@ -79,81 +96,84 @@ namespace YMLParser.Controllers
                             files.Add(xdoc);
                         }
                     }
-                    var Output = CreateDocument(files.ToArray());
+                    Parser parser = new Parser();
+                    var output = parser.CreateDocument(files.ToArray());
                 }
-                
+
             }
-            return PartialView("ConvertPartial");
+            return View("Index");
         }
 
-        /// <summary>
-        /// Creates document from a single file
-        /// </summary>
-        /// <param name="file">Input file</param>
-        /// <returns></returns>
-        private XDocument CreateDocument(XDocument file)
+        [HttpPost]
+        public ActionResult DownloadFile(FileOutput file, string[] selected)
         {
-            XDocument xdoc = new XDocument();
-
-            XElement root = file.Element("shop");
-
-            foreach (XElement item in root.Elements())
+            //создаем список выбранных категорий
+            List<string> categories = new List<string>();
+            foreach (var item in selected)
             {
-                if (item.Name == "categories")
+                if (item!="false")
                 {
-                    XElement categories = new XElement(item);
-                    xdoc.Add(categories);
-                }
-                else if (item.Name == "offers")
-                {
-                    XElement offers = new XElement("offers");
-
-                    foreach(XElement offer in item.Elements())
-                    {
-                        XElement offerOut = new XElement("offer");
-                        offerOut.SetAttributeValue("id", offer.Attribute("id"));
-                        offerOut.SetAttributeValue("availible", offer.Attribute("availible"));
-
-                        foreach (XElement child in offer.Elements())
-                        {
-                            switch (child.Name.ToString())
-                            {
-                                case "name":
-                                    XElement name = new XElement("name", child);
-                                    offerOut.Add(name);
-                                    break;
-                                case "description":
-                                    XElement description = new XElement("description", child);
-                                    offerOut.Add(description);
-                                    break;
-                                case "price":
-                                    XElement price = new XElement("price", child);
-                                    offerOut.Add(price);
-                                    break;
-                                case "":
-                                    break;
-                                default:
-                                    break;
-                            }
-                        }
-                        offers.Add(offerOut);
-                    }
-                    xdoc.Add(offers);
+                    categories.Add(item);
                 }
             }
-            return xdoc;
+
+            var xdoc = XDocument.Load(file.FilePath);
+            Parser parser = new Parser();
+            var output = parser.SelectCategories(xdoc, categories);
+            FileOutput newFile = SaveFile(output);
+            string fileType = newFile.FileType;
+            string fileName = newFile.FileName;
+            string filePath = newFile.FilePath;
+
+            FileInfo info = new FileInfo(filePath);
+            byte[] fileConent = System.IO.File.ReadAllBytes(filePath);
+            var cd = new System.Net.Mime.ContentDisposition
+            {
+                // for example foo.bak
+                FileName = fileName,
+
+                // always prompt the user for downloading, set to true if you want 
+                // the browser to try to show the file inline
+                Inline = false,
+            };
+            Response.AppendHeader("Content-Disposition", cd.ToString());
+
+            return File(fileConent, fileType);
+        }
+
+        [HttpPost]
+        public ActionResult DownloadSelected()
+        {
+            return View();
         }
 
         /// <summary>
-        /// Creates document from multiple files
+        /// Сохраняет файл на сервер
         /// </summary>
-        /// <param name="files">Input files</param>
+        /// <param name="output"></param>
         /// <returns></returns>
-        private XDocument CreateDocument(XDocument[] files)
+        public FileOutput SaveFile(XDocument output)
         {
-            XDocument xdoc = new XDocument();
+            FileOutput file = new FileOutput
+            {
+                FileType = "application/xml",
+                FileName = DateTime.Now.ToString("yyyyMMddHHmmss") + ".xml"
+            };
+            var path = Server.MapPath(".\\App_Data\\");
+            file.FilePath = path + file.FileName;
+            //проверяем, существует ли папка
+            if (!Directory.Exists(path)) Directory.CreateDirectory(path);
+            //Пишем файл
+            file.Info = new FileInfo(file.FilePath);
+            if (!file.Info.Exists)
+            {
+                var stream = file.Info.Create();
+                output.Save(stream);
+                stream.Close();
+            }
 
-            return xdoc;
+            return file;
         }
+
     }
 }

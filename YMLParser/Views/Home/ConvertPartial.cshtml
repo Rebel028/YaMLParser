@@ -1,1 +1,19 @@
-﻿<button class="btn btn-primary">Download</button>
+﻿@model YMLParser.Models.FileOutput
+
+@using (Html.BeginForm("DownloadFile", "Home", new { @class = "form-group" }))
+{
+    @Html.HiddenFor(m => m.FileType);
+    @Html.HiddenFor(m => m.FileName);
+    @Html.HiddenFor(m => m.FilePath);
+    @Html.HiddenFor(m => m.Info);
+    <div class="col-md-6">
+        @foreach (var category in Model.Categories)
+        {
+        <div>
+            @Html.CheckBox("selected", true, new { @id = category.Key, @value = category.Value })
+            @Html.Label("name", category.Value, new { @for = category.Key, @style = "margin-bottom: 0;" })
+        </div>
+        }
+    </div>
+    <input id="download" class="btn btn-primary" type="submit" value="Download" style="margin-top: 10px;" />
+}

@@ -29,5 +29,7 @@ namespace YMLParser.Models
         {
             return new ApplicationDbContext();
         }
+
+        public DbSet<Provider> Providers { get; set; }
     }
 }
