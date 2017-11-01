@@ -192,6 +192,7 @@
     <Compile Include="Controllers\AccountController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\ManageController.cs" />
+    <Compile Include="Controllers\UserSelectionsController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
@@ -267,6 +268,11 @@
     <Content Include="Views\Shared\Lockout.cshtml" />
     <Content Include="Views\Shared\_LoginPartial.cshtml" />
     <Content Include="Views\Home\ConvertPartial.cshtml" />
+    <Content Include="Views\UserSelections\Create.cshtml" />
+    <Content Include="Views\UserSelections\Delete.cshtml" />
+    <Content Include="Views\UserSelections\Details.cshtml" />
+    <Content Include="Views\UserSelections\Edit.cshtml" />
+    <Content Include="Views\UserSelections\Index.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />

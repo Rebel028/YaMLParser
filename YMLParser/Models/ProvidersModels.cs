@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Data.Entity;
 using System.Linq;
 using System.Web;
@@ -12,6 +13,7 @@ namespace YMLParser.Models
     {
         [Required]
         public string Id { get; set; }
+
         /// <summary>
         /// Id пользователя (<see cref="ApplicationUser"/>)
         /// </summary>
@@ -29,9 +31,6 @@ namespace YMLParser.Models
         public IEnumerable<OutputLink> ExistingLinks { get; set; }
     }
 
-    /// <summary>
-    /// Класс, представляющий поставщика
-    /// </summary>
     public class Provider
     {
         [Required]
@@ -70,7 +69,7 @@ namespace YMLParser.Models
         /// <summary>
         /// Поставщики, включенные в ссылку
         /// </summary>
-        public IEnumerable<Provider> Providers { get; set; }
+        public IEnumerable<Provider> SelectedProviders { get; set; }
 
         /// <summary>
         /// Категории, включенные в ссылку
@@ -94,5 +93,10 @@ namespace YMLParser.Models
         /// </summary>
         [DisplayName("Варианты названия")]
         public IEnumerable<string> Aliases { get; set; }
+
+        /// <summary>
+        /// Список поставщиков имеющих эту категорию
+        /// </summary>
+        public IEnumerable<Provider> Owners { get; set; }
     }
 }

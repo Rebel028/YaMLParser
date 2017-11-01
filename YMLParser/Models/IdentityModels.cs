@@ -31,5 +31,8 @@ namespace YMLParser.Models
         }
 
         public DbSet<Provider> Providers { get; set; }
+        public DbSet<OutputLink> OutputLinks { get; set; }
+        public DbSet<UserSelection> UserSelections { get; set; }
+        public DbSet<Category> Categories { get; set; }
     }
 }
