@@ -34,5 +34,16 @@ namespace YMLParser.Models
         public DbSet<OutputLink> OutputLinks { get; set; }
         public DbSet<UserSelection> UserSelections { get; set; }
         public DbSet<Category> Categories { get; set; }
+
+        //protected override void OnModelCreating(DbModelBuilder modelBuilder)
+        //{
+        //    modelBuilder.Entity<UserSelection>().HasMany(c => c.ExistingLinks)
+        //        .WithMany(s => s.UserSelection)
+        //        .Map(t => t.MapLeftKey("CourseId")
+        //            .MapRightKey("StudentId")
+        //            .ToTable("CourseStudent"));
+        //}
     }
+
+
 }

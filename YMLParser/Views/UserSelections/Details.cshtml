@@ -1,4 +1,5 @@
-﻿@model YMLParser.Models.UserSelection
+﻿@using YMLParser.Models
+@model YMLParser.Models.Provider
 
 @{
     ViewBag.Title = "Details";
@@ -12,16 +13,36 @@
     <hr />
     <dl class="dl-horizontal">
         <dt>
-            @Html.DisplayNameFor(model => model.UserId)
+            @Html.DisplayNameFor(model => model.Name)
         </dt>
 
         <dd>
-            @Html.DisplayFor(model => model.UserId)
+            @Html.DisplayFor(model => model.Name)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Link)
+        </dt>
+
+        <dd>
+            @Html.DisplayFor(model => model.Link)
         </dd>
 
     </dl>
+    <h4>
+        @Html.DisplayNameFor(model => model.Categories)
+    </h4>
+    <div>
+        <ul>
+        @foreach (Category category in Model.Categories)
+        {
+            <li>
+                @Html.DisplayText(category.Name);
+            </li>
+        }
+        </ul>
+    </div>
 </div>
 <p>
-    @Html.ActionLink("Edit", "Edit", new { id = Model.Id }) |
-    @Html.ActionLink("Back to List", "Index")
+    @*@Html.ActionLink("Правка", "EditProvider", new { id = Model.Id }) |*@
+    @Html.ActionLink("Назад", "Index")
 </p>

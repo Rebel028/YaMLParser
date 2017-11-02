@@ -11,8 +11,8 @@ namespace YMLParser.Models
 {
     public class UserSelection
     {
-        [Required]
-        public string Id { get; set; }
+        [Key]
+        public int Id { get; set; }
 
         /// <summary>
         /// Id пользователя (<see cref="ApplicationUser"/>)
@@ -23,18 +23,24 @@ namespace YMLParser.Models
         /// <summary>
         /// Добавленные поставщики
         /// </summary>
-        public IEnumerable<Provider> AddedProviders { get; set; }
+        public ICollection<Provider> AddedProviders { get; set; }
 
         /// <summary>
         /// Имеющиеся ссылки
         /// </summary>
-        public IEnumerable<OutputLink> ExistingLinks { get; set; }
+        public ICollection<OutputLink> ExistingLinks { get; set; }
+
+        public UserSelection()
+        {
+            AddedProviders = new List<Provider>();
+            ExistingLinks = new List<OutputLink>();
+        }
     }
 
     public class Provider
     {
-        [Required]
-        public string Id { get; set; }
+        [ScaffoldColumn(false)]
+        public int Id { get; set; }
 
         /// <summary>
         /// Имя поставщика
@@ -52,13 +58,23 @@ namespace YMLParser.Models
         /// Категории товаров поставщика
         /// </summary>
         [DisplayName("Категории")]
-        public IEnumerable<Category> Categories { get; set; }
+        public ICollection<Category> Categories { get; set; }
+
+        /// <summary>
+        /// Где добавлено
+        /// </summary>
+        public ICollection<UserSelection> UserSelections { get; set; }
+
+        public Provider()
+        {
+            Categories = new List<Category>();
+            UserSelections = new List<UserSelection>();
+        }
     }
 
     public class OutputLink
     {
-        [Required]
-        public string Id { get; set; }
+        public int Id { get; set; }
 
         /// <summary>
         /// Ссылка на исходящий файл
@@ -69,18 +85,28 @@ namespace YMLParser.Models
         /// <summary>
         /// Поставщики, включенные в ссылку
         /// </summary>
-        public IEnumerable<Provider> SelectedProviders { get; set; }
+        public ICollection<Provider> SelectedProviders { get; set; }
 
         /// <summary>
         /// Категории, включенные в ссылку
         /// </summary>
-        public IEnumerable<Category> SelectedCategories { get; set; }
+        public ICollection<Category> SelectedCategories { get; set; }
+
+        [ForeignKey("UserSelection")]
+        public int? UserSelectionId { get; set; }
+
+        public UserSelection UserSelection { get; set; }
+
+        public OutputLink()
+        {
+            SelectedProviders = new List<Provider>();
+            SelectedCategories = new List<Category>();
+        }
     }
 
     public class Category
     {
-        [Required]
-        public string Id { get; set; }
+        public int Id { get; set; }
 
         /// <summary>
         /// Название категории
@@ -92,11 +118,20 @@ namespace YMLParser.Models
         /// Варианты названия категории
         /// </summary>
         [DisplayName("Варианты названия")]
-        public IEnumerable<string> Aliases { get; set; }
+        public ICollection<string> Aliases { get; set; }
 
         /// <summary>
         /// Список поставщиков имеющих эту категорию
         /// </summary>
-        public IEnumerable<Provider> Owners { get; set; }
+        public ICollection<Provider> Owners { get; set; }
+
+
+        public ICollection<OutputLink> Links { get; set; }
+
+        public Category()
+        {
+            Aliases = new List<string>();
+            Owners = new List<Provider>();
+        }
     }
 }

@@ -141,11 +141,11 @@ namespace YMLParser.Controllers
             return File(fileConent, fileType);
         }
 
-        [HttpPost]
-        public ActionResult DownloadSelected()
-        {
-            return View();
-        }
+        //[HttpPost]
+        //public ActionResult DownloadSelected()
+        //{
+        //    return View();
+        //}
 
         /// <summary>
         /// Сохраняет файл на сервер
