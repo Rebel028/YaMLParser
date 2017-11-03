@@ -10,8 +10,8 @@ namespace YMLParser
 {
     public class Parser
     {
-        private int imageCounter = 0;
-        public Dictionary<string, string> catDictionary = new Dictionary<string, string>();
+        private int _imageCounter = 0;
+        public Dictionary<string, string> CatDictionary = new Dictionary<string, string>();
 
         /// <summary>
         /// Создает документ из 1 файла
@@ -48,7 +48,7 @@ namespace YMLParser
                         offer.SetAttributeValue("id", off.Attribute("id").Value);
                         offer.SetAttributeValue("available", off.Attribute("available").Value);
 
-                        imageCounter = 0;
+                        _imageCounter = 0;
 
                         foreach (XElement child in off.Elements())
                         {
@@ -127,7 +127,7 @@ namespace YMLParser
                     output.Add(new XElement("production_time", element.Value));
                     break;
                 case "categoryId":
-                    output.Add(new XElement("category", catDictionary[element.Value]));
+                    output.Add(new XElement("category", CatDictionary[element.Value]));
                     break;
                 case "param":
                     var par = ParseParam(element);
@@ -137,14 +137,14 @@ namespace YMLParser
                     }
                     break;
                 case "picture":
-                    if (imageCounter < 1)
+                    if (_imageCounter < 1)
                     {
                         output.Add(new XElement("image", element.Value));
-                        imageCounter++;
+                        _imageCounter++;
                     }
                     else
                     {
-                        output.Add(new XElement("additionalImage" + imageCounter++, element.Value));
+                        output.Add(new XElement("additionalImage" + _imageCounter++, element.Value));
                     }
                     break;
                 default:
@@ -211,7 +211,7 @@ namespace YMLParser
         {
             foreach (XElement category in categories.Elements())
             {
-                catDictionary.Add(category.Attribute("id").Value, category.Value);
+                CatDictionary.Add(category.Attribute("id").Value, category.Value);
             }
         }
 

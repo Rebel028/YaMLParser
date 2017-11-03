@@ -32,7 +32,7 @@ namespace YMLParser.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult> CreateXMLFromLink(string link)
+        public async Task<ActionResult> CreateXmlFromLink(string link)
         {
             //загружаем файл
             System.Net.Http.HttpClient client = new System.Net.Http.HttpClient();
@@ -44,14 +44,14 @@ namespace YMLParser.Controllers
             var output = parser.CreateDocument(xdoc);
             //поучаем результат
             FileOutput file = SaveFile(output);
-            file.Categories = parser.catDictionary;
+            file.Categories = parser.CatDictionary;
 
             //return File(file.Info.OpenRead(), file.FileType, file.FileName);
             return PartialView("ConvertPartial", file);
         }
 
         [HttpPost]
-        public ActionResult CreateXMLFromFile()
+        public ActionResult CreateXmlFromFile()
         {
             if (Request.Files.Count > 0)
             {
@@ -73,7 +73,7 @@ namespace YMLParser.Controllers
                         var output = parser.CreateDocument(xdoc);
                         //поучаем результат
                         FileOutput file = SaveFile(output);
-                        file.Categories = parser.catDictionary;
+                        file.Categories = parser.CatDictionary;
 
                         return PartialView("ConvertPartial", file);
                     }

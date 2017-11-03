@@ -18,7 +18,7 @@ namespace YMLParser.Controllers
     [Authorize]
     public class UserSelectionsController : Controller
     {
-        private ApplicationDbContext db = new ApplicationDbContext();
+        private ApplicationDbContext _db = new ApplicationDbContext();
 
         private ApplicationUserManager UserManager { get; set; }
         private ApplicationUser CurrentUser { get; set; }
@@ -35,9 +35,9 @@ namespace YMLParser.Controllers
 
         private void GetUserSelection()
         {
-            CurrentUserSelection = db.UserSelections.First(s => s.UserId == CurrentUser.Id);
-            var providers = db.Providers.Include(p => p.UserSelections);
-            var links = db.OutputLinks.Include(p => p.SelectedProviders);
+            CurrentUserSelection = _db.UserSelections.First(s => s.UserId == CurrentUser.Id);
+            var providers = _db.Providers.Include(p => p.UserSelections);
+            var links = _db.OutputLinks.Include(p => p.SelectedProviders);
 
             ViewBag.Providers = providers.ToList();
             ViewBag.Links = links.ToList();
@@ -64,8 +64,8 @@ namespace YMLParser.Controllers
                         AddedProviders = new List<Provider>(),
                         ExistingLinks = new List<OutputLink>()
                     };
-                    db.UserSelections.Add(CurrentUserSelection);
-                    db.SaveChanges();
+                    _db.UserSelections.Add(CurrentUserSelection);
+                    _db.SaveChanges();
                 }
             }
             catch (DbEntityValidationException dbEx)
@@ -84,7 +84,7 @@ namespace YMLParser.Controllers
 
         private bool UserSelectionExists()
         {
-            if (CurrentUser != null && db.UserSelections.Any(s => s.UserId == CurrentUser.Id))
+            if (CurrentUser != null && _db.UserSelections.Any(s => s.UserId == CurrentUser.Id))
             {
                 return true;
             }
@@ -153,23 +153,23 @@ namespace YMLParser.Controllers
             if (ModelState.IsValid)
             {
                 Provider newProvider;
-                if (!db.Providers.Any(p=>p.Link==provider.Link))
+                if (!_db.Providers.Any(p=>p.Link==provider.Link))
                 {
-                    db.Providers.Add(provider);
+                    _db.Providers.Add(provider);
                     newProvider = provider;
-                    db.SaveChanges();
+                    _db.SaveChanges();
                 }
                 else
                 {
-                    newProvider = db.Providers.First(p => p.Link == provider.Link);
+                    newProvider = _db.Providers.First(p => p.Link == provider.Link);
                 }
 
                 newProvider.UserSelections.Add(CurrentUserSelection);
                 CurrentUserSelection.AddedProviders.Add(newProvider);
 
-                db.Entry(CurrentUserSelection).State = EntityState.Modified;
-                db.Entry(newProvider).State = EntityState.Modified;
-                await db.SaveChangesAsync();
+                _db.Entry(CurrentUserSelection).State = EntityState.Modified;
+                _db.Entry(newProvider).State = EntityState.Modified;
+                await _db.SaveChangesAsync();
                 return RedirectToAction("Index", CurrentUserSelection);
             }
 
@@ -239,15 +239,15 @@ namespace YMLParser.Controllers
             GetCurrentUserInfo();
             GetUserSelection();
 
-            Provider provider = await db.Providers.FindAsync(id);
+            Provider provider = await _db.Providers.FindAsync(id);
 
             CurrentUserSelection.AddedProviders.Remove(provider);
             provider.UserSelections.Remove(CurrentUserSelection);
             //удаляем поставщика если больше никем не используется
-            db.Entry(provider).State = provider.UserSelections.Count < 1 ? EntityState.Deleted : EntityState.Modified;
+            _db.Entry(provider).State = provider.UserSelections.Count < 1 ? EntityState.Deleted : EntityState.Modified;
 
-            db.Entry(CurrentUserSelection).State = EntityState.Modified;
-            await db.SaveChangesAsync();
+            _db.Entry(CurrentUserSelection).State = EntityState.Modified;
+            await _db.SaveChangesAsync();
 
             return RedirectToAction("Index");
         }
@@ -256,7 +256,7 @@ namespace YMLParser.Controllers
         {
             if (disposing)
             {
-                db.Dispose();
+                _db.Dispose();
             }
             base.Dispose(disposing);
         }

@@ -9,14 +9,14 @@
     </ul>
     <div class="tab-content">
         <div role="tabpanel" class="tab-pane active" id="link">
-            @using (Ajax.BeginForm("CreateXMLFromLink", "Home", new AjaxOptions { UpdateTargetId = "results" }, new { @class = "form-group" }))
+            @using (Ajax.BeginForm("CreateXmlFromLink", "Home", new AjaxOptions { UpdateTargetId = "results" }, new { @class = "form-group" }))
             {
                 <input type="text" class="form-control" id="form-group-input" name="link" placeholder="URL файла" style="margin-top: 10px;">
                 <input id="SubmitUrl" class ="btn btn-primary" type="submit" value="Отправить" style="margin-top: 10px;"/>
             }
         </div>
         <div role="tabpanel" class="tab-pane" id="file">
-            @using (Ajax.BeginForm("CreateXMLFromFile", "Home", new AjaxOptions { UpdateTargetId = "results" }, new { @class = "form-group" }))
+            @using (Ajax.BeginForm("CreateXmlFromFile", "Home", new AjaxOptions { UpdateTargetId = "results" }, new { @class = "form-group" }))
             {
                 <input id="form-group-input-file" type="file" multiple="true" name="file" style="margin-top: 10px;"/>
                 <input id="Submitfile" class ="btn btn-primary" type="submit" value="Отправить" style="margin-top: 10px;"/>
