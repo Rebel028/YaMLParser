@@ -9,7 +9,7 @@
     <div class="col-md-6">
         @foreach (var category in Model.Categories)
         {
-        <div>
+        <div class="col-md-4 checkbox checkbox-primary">
             @Html.CheckBox("selected", true, new { @id = category.Key, @value = category.Value })
             @Html.Label("name", category.Value, new { @for = category.Key, @style = "margin-bottom: 0;" })
         </div>

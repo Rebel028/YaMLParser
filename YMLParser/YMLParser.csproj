@@ -201,6 +201,10 @@
     <Compile Include="Migrations\201711021607279_initial.Designer.cs">
       <DependentUpon>201711021607279_initial.cs</DependentUpon>
     </Compile>
+    <Compile Include="Migrations\201711061515320_aliases.cs" />
+    <Compile Include="Migrations\201711061515320_aliases.Designer.cs">
+      <DependentUpon>201711061515320_aliases.cs</DependentUpon>
+    </Compile>
     <Compile Include="Migrations\Configuration.cs" />
     <Compile Include="Models\AccountViewModels.cs" />
     <Compile Include="Models\FileOutput.cs" />
@@ -214,6 +218,7 @@
   <ItemGroup>
     <Content Include="Content\bootstrap.css" />
     <Content Include="Content\bootstrap.min.css" />
+    <Content Include="Content\CheckboxesRadios.css" />
     <Content Include="favicon.ico" />
     <Content Include="fonts\glyphicons-halflings-regular.svg" />
     <Content Include="Global.asax" />
@@ -306,6 +311,9 @@
   <ItemGroup>
     <EmbeddedResource Include="Migrations\201711021607279_initial.resx">
       <DependentUpon>201711021607279_initial.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201711061515320_aliases.resx">
+      <DependentUpon>201711061515320_aliases.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <PropertyGroup>

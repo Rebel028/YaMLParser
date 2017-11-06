@@ -26,8 +26,6 @@ namespace YMLParser.Migrations
             //      new Person { FullName = "Rowan Miller" }
             //    );
             //
-            context.UserSelections.AddOrUpdate(
-                u=>u.UserId==context.Users.FirstOrDefault().Id);
         }
     }
 }

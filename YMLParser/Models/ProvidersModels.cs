@@ -115,10 +115,23 @@ namespace YMLParser.Models
         public string Name { get; set; }
 
         /// <summary>
+        /// Варианты названия категории, разделенные запятой
+        /// </summary>
+        public string Aliases { get; set; }
+
+        /// <summary>
         /// Варианты названия категории
         /// </summary>
-        [DisplayName("Варианты названия")]
-        public ICollection<string> Aliases { get; set; }
+        [NotMapped]
+        public ICollection<string> AliasesList
+        {
+            get
+            {
+                string[] tab = this.Aliases.Split(',');
+                return tab.ToList();
+            }
+            set { this.Aliases = string.Join(",", value.ToArray()); }
+        }
 
         /// <summary>
         /// Список поставщиков имеющих эту категорию
@@ -130,7 +143,7 @@ namespace YMLParser.Models
 
         public Category()
         {
-            Aliases = new List<string>();
+            AliasesList = new List<string>();
             Owners = new List<Provider>();
         }
     }

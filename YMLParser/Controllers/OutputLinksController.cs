@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using System.Net;
 using System.Web;
 using System.Web.Mvc;
+using Microsoft.AspNet.Identity;
+using Microsoft.AspNet.Identity.Owin;
 using YMLParser.Models;
 
 namespace YMLParser.Controllers
@@ -15,9 +17,35 @@ namespace YMLParser.Controllers
     {
         private ApplicationDbContext db = new ApplicationDbContext();
 
+        private ApplicationUserManager UserManager { get; set; }
+        private ApplicationUser CurrentUser { get; set; }
+        private UserSelection CurrentUserSelection { get; set; }
+
+        private void GetCurrentUserInfo()
+        {
+            if (User.Identity.IsAuthenticated)
+            {
+                UserManager = HttpContext.GetOwinContext().GetUserManager<ApplicationUserManager>();
+                CurrentUser = UserManager.FindById(User.Identity.GetUserId());
+            }
+        }
+
+        private void GetUserSelection()
+        {
+            CurrentUserSelection = db.UserSelections.First(s => s.UserId == CurrentUser.Id);
+            var providers = db.Providers.Include(p => p.UserSelections);
+            var links = db.OutputLinks.Include(p => p.SelectedProviders);
+
+            ViewBag.Providers = providers.ToList();
+            ViewBag.Links = links.ToList();
+        }
+
         // GET: OutputLinks
         public async Task<ActionResult> Index()
         {
+            GetCurrentUserInfo();
+            GetUserSelection();
+
             var outputLinks = db.OutputLinks.Include(o => o.UserSelection);
             return PartialView(await outputLinks.ToListAsync());
         }
@@ -34,14 +62,21 @@ namespace YMLParser.Controllers
             {
                 return HttpNotFound();
             }
-            return View(outputLink);
+            return PartialView(outputLink);
         }
 
         // GET: OutputLinks/Create
         public ActionResult Create()
         {
+            GetCurrentUserInfo();
+            GetUserSelection();
+
+            var vendorsList = CurrentUserSelection.AddedProviders;
+            ViewBag.Categories = db.Providers.Include(p => p.Categories).ToList();
+
             ViewBag.UserSelectionId = new SelectList(db.UserSelections, "Id", "UserId");
-            return View();
+
+            return View(vendorsList);
         }
 
         // POST: OutputLinks/Create

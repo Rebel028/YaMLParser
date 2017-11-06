@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Net;
+using System.Text;
 using System.Web;
 using System.Web.Mvc;
 using Microsoft.AspNet.Identity;
@@ -41,15 +42,6 @@ namespace YMLParser.Controllers
 
             ViewBag.Providers = providers.ToList();
             ViewBag.Links = links.ToList();
-
-            //if (CurrentUserSelection.AddedProviders == null)
-            //{
-            //    CurrentUserSelection.AddedProviders = new List<Provider>();
-            //}
-            //if (CurrentUserSelection.ExistingLinks == null)
-            //{
-            //    CurrentUserSelection.ExistingLinks = new List<OutputLink>();
-            //}
         }
 
         private void CreateUserSelection()
@@ -290,7 +282,9 @@ namespace YMLParser.Controllers
                 {
                     Name = category,
                 };
-                cat.Aliases.Add(cat.Name);
+                var sb = new StringBuilder();
+                sb.Append(cat.Name+",");
+                cat.Aliases = sb.ToString();
                 Categories.Add(cat);
             }
             return Categories;

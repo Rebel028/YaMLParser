@@ -284,7 +284,8 @@ namespace YMLParser
                 Vendor = ProviderName,
                 Categories = CatDictionary
             };
-            var path = HttpContext.Current.Server.MapPath(".\\App_Data\\");
+            var root = AppContext.BaseDirectory;
+            var path = root+"App_Data\\";
             file.FilePath = path + file.FileName;
             //проверяем, существует ли папка
             if (!Directory.Exists(path)) Directory.CreateDirectory(path);
