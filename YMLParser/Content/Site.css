@@ -39,3 +39,7 @@ textarea {
     padding: 20px;
     margin-top: -20px;
 }
+
+.collapsing {
+    padding-bottom: 0;
+}

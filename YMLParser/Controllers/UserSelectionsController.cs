@@ -155,16 +155,40 @@ namespace YMLParser.Controllers
                 Provider newProvider;
                 if (!_db.Providers.Any(p=>p.Link==provider.Link))
                 {
-                    _db.Providers.Add(provider);
                     newProvider = provider;
+                    _db.Providers.Add(provider);
                     _db.SaveChanges();
                 }
                 else
                 {
                     newProvider = _db.Providers.First(p => p.Link == provider.Link);
                 }
+                //запускаем парсер
+                Parser parser = new Parser();
+                var output = await parser.ParseFile(provider.Link);
 
+                newProvider.Name = output.Vendor;
                 newProvider.UserSelections.Add(CurrentUserSelection);
+                //парсим категории
+                var сategories = ParseCategories(output.Categories.Values.ToList());
+                //добавляем их куда надо
+                foreach (Category category in сategories)
+                {
+                    if (!_db.Categories.Any(c=>c.Aliases.Contains(category.Name))) //если такой категории нет в БД
+                    {
+                        category.Owners.Add(newProvider);
+                        newProvider.Categories.Add(category);
+                        _db.Categories.Add(category);
+                    }
+                    else //если она есть
+                    {
+                        //находим ее
+                        var existingCategory = _db.Categories.First(c => c.Aliases.Contains(category.Name));
+                        existingCategory.Owners.Add(newProvider);
+                        newProvider.Categories.Add(existingCategory);
+                        _db.Entry(existingCategory).State = EntityState.Modified;
+                    }
+                }
                 CurrentUserSelection.AddedProviders.Add(newProvider);
 
                 _db.Entry(CurrentUserSelection).State = EntityState.Modified;
@@ -250,6 +274,26 @@ namespace YMLParser.Controllers
             await _db.SaveChangesAsync();
 
             return RedirectToAction("Index");
+        }
+
+        /// <summary>
+        /// Парсит категории в список из объектов <see cref="Category"/>
+        /// </summary>
+        /// <param name="categoriesList">Входящий список категорий</param>
+        /// <returns></returns>
+        private static List<Category> ParseCategories(IList<string> categoriesList)
+        {
+            List<Category> Categories = new List<Category>();
+            foreach (string category in categoriesList)
+            {
+                var cat = new Category
+                {
+                    Name = category,
+                };
+                cat.Aliases.Add(cat.Name);
+                Categories.Add(cat);
+            }
+            return Categories;
         }
 
         protected override void Dispose(bool disposing)

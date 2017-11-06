@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
 using System.Web;
 using System.Xml.Linq;
 using YMLParser.Models;
@@ -12,6 +14,18 @@ namespace YMLParser
     {
         private int _imageCounter = 0;
         public Dictionary<string, string> CatDictionary = new Dictionary<string, string>();
+        public string ProviderName=string.Empty;
+
+        public static Task<XDocument> LinkToXDocument(string link)
+        {
+            return Task.Run(async () =>
+            {
+                //загружаем файл
+                var client = new HttpClient();
+                var response = await client.GetStreamAsync(link);
+                return XDocument.Load(response);
+            });
+        }
 
         /// <summary>
         /// Создает документ из 1 файла
@@ -37,6 +51,7 @@ namespace YMLParser
                 else if (item.Name == "company")
                 {
                     shop.Add(new XElement("vendor", item.Value));
+                    ProviderName = item.Value;
                 }
                 else if (item.Name == "offers")
                 {
@@ -241,6 +256,48 @@ namespace YMLParser
             }
         }
 
+        /// <summary>
+        /// Парсит и сохраняет файл
+        /// </summary>
+        /// <param name="link">ссылка на файл</param>
+        public Task<FileOutput> ParseFile(string link)
+        {
+            return Task.Run(async () =>
+            {
+                var input = await LinkToXDocument(link);
+                var xdoc = CreateDocument(input);
+                return SaveFile(xdoc);
+            });
+        }
 
+        /// <summary>
+        /// Сохраняет файл на сервер
+        /// </summary>
+        /// <param name="output"></param>
+        /// <returns></returns>
+        private FileOutput SaveFile(XDocument output)
+        {
+            FileOutput file = new FileOutput
+            {
+                FileType = "application/xml",
+                FileName = ProviderName + DateTime.Now.ToString("_yyyyMMdd") + ".xml",
+                Vendor = ProviderName,
+                Categories = CatDictionary
+            };
+            var path = HttpContext.Current.Server.MapPath(".\\App_Data\\");
+            file.FilePath = path + file.FileName;
+            //проверяем, существует ли папка
+            if (!Directory.Exists(path)) Directory.CreateDirectory(path);
+            //Пишем файл
+            file.Info = new FileInfo(file.FilePath);
+            if (!file.Info.Exists)
+            {
+                var stream = file.Info.Create();
+                output.Save(stream);
+                stream.Close();
+            }
+
+            return file;
+        }
     }
 }

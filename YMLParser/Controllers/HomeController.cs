@@ -34,17 +34,11 @@ namespace YMLParser.Controllers
         [HttpPost]
         public async Task<ActionResult> CreateXmlFromLink(string link)
         {
-            //загружаем файл
-            System.Net.Http.HttpClient client = new System.Net.Http.HttpClient();
-            var response = await client.GetStreamAsync(link);
-            XDocument xdoc = XDocument.Load(response);
-
             //запускаем парсер
             Parser parser = new Parser();
-            var output = parser.CreateDocument(xdoc);
+
             //поучаем результат
-            FileOutput file = SaveFile(output);
-            file.Categories = parser.CatDictionary;
+            FileOutput file = await parser.ParseFile(link);
 
             //return File(file.Info.OpenRead(), file.FileType, file.FileName);
             return PartialView("ConvertPartial", file);
