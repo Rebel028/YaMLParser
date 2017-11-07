@@ -1,14 +1,17 @@
 ﻿@model YMLParser.Models.OutputLink
 
 <div>
-    <h4>OutputLink</h4>
-    <hr />
     <dl class="dl-horizontal">
+        <dt>
+            @Html.DisplayNameFor(model => model.Name)
+        </dt>
         <dt>
             @Html.DisplayNameFor(model => model.Link)
         </dt>
 
         <dd>
+            @Html.DisplayFor(model => model.Name)
+        </dd>        <dd>
             @Html.DisplayFor(model => model.Link)
         </dd>
 

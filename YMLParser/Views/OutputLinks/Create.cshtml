@@ -1,4 +1,5 @@
-﻿@model IEnumerable<YMLParser.Models.Provider>
+﻿@using System.Net.Mime
+@model IEnumerable<YMLParser.Models.Provider>
 
 @{
     ViewBag.Title = "Create";
@@ -16,20 +17,25 @@
     {
         <div class="panel panel-default">
             <div class="panel-heading">
-                <a class="btn-block" data-toggle="collapse" href="#collapseProviders" aria-expanded="true" aria-controls="collapseProviders" style="text-align: left">
+                <a class="btn-block" data-toggle="collapse" href="@("#collapseProviders" + provider.Id)" aria-expanded="true" aria-controls="@("collapseProviders" + provider.Id)" style="text-align: left">
                     @provider.Name
                 </a>
             </div>
             <div class="panel-body" style="padding: 0;">
-                <div class="in" id="collapseProviders">
+                <div class="in" id="@("collapseProviders" + provider.Id)">
                     <div class="table-wrapper">
+                        <div class="btn-group col-md-12">
+                            <button type="button" class="btn btn-primary checkall" id="@provider.Id">Выделить все</button>
+                            <button type="button" class="btn btn-primary uncheckall" id="@provider.Id">Убрать все</button>
+                        </div>
                         @if (provider.Categories.Count > 0)
                         {
                             foreach (var category in provider.Categories)
                             {
+                                var checkboxId = provider.Id + "_" + category.Id;
                                 <div class="col-md-4 checkbox checkbox-primary">
-                                    @Html.CheckBox("selected", true, new { @id = category.Id, @value = category.Name })
-                                    @Html.Label("name", category.Name, new { @for = category.Id, @style = "margin-bottom: 0;" })
+                                    @Html.CheckBox("selected", true, new {@id = checkboxId, @value = checkboxId})
+                                    @Html.Label("name", category.Name, new {@for = checkboxId, @style = "margin-bottom: 0;"})
                                 </div>
                             }
                         }
@@ -60,3 +66,15 @@
 @section Scripts {
     @Scripts.Render("~/bundles/jqueryval")
 }
+<script type="text/javascript">
+    $(document).ready(function() {
+        $('.checkall').click(function() {
+            var providerId = this.id;
+            $('#collapseProviders'+providerId).find('input:checkbox').prop('checked', 'checked');
+        });
+        $('.uncheckall').click(function() {
+            var providerId = this.id;
+            $('#collapseProviders'+providerId).find('input:checkbox').prop('checked', '');
+        });
+    })
+</script>

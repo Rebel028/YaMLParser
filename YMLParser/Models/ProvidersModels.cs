@@ -77,6 +77,12 @@ namespace YMLParser.Models
         public int Id { get; set; }
 
         /// <summary>
+        /// Название ссылки
+        /// </summary>
+        [DisplayName("Название ссылки")]
+        public string Name { get; set; }
+
+        /// <summary>
         /// Ссылка на исходящий файл
         /// </summary>
         [DisplayName("Ссылка на исходящий файл")]

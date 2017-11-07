@@ -205,6 +205,10 @@
     <Compile Include="Migrations\201711061515320_aliases.Designer.cs">
       <DependentUpon>201711061515320_aliases.cs</DependentUpon>
     </Compile>
+    <Compile Include="Migrations\201711071329327_linksName.cs" />
+    <Compile Include="Migrations\201711071329327_linksName.Designer.cs">
+      <DependentUpon>201711071329327_linksName.cs</DependentUpon>
+    </Compile>
     <Compile Include="Migrations\Configuration.cs" />
     <Compile Include="Models\AccountViewModels.cs" />
     <Compile Include="Models\FileOutput.cs" />
@@ -314,6 +318,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Migrations\201711061515320_aliases.resx">
       <DependentUpon>201711061515320_aliases.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201711071329327_linksName.resx">
+      <DependentUpon>201711071329327_linksName.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <PropertyGroup>
