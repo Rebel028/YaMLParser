@@ -122,6 +122,7 @@ namespace YMLParser.Controllers
             {
                 return HttpNotFound();
             }
+            ViewBag.Categories = _db.Providers.Include(p => p.Categories);
             return View(provider);
         }
 
@@ -156,8 +157,8 @@ namespace YMLParser.Controllers
                     newProvider = _db.Providers.First(p => p.Link == provider.Link);
                 }
                 //запускаем парсер
-                Parser parser = new Parser();
-                var output = await parser.ParseFile(provider.Link);
+                Parser parser = new Parser(_db);
+                var output = await parser.ParseSingleFile(provider.Link);
 
                 newProvider.Name = output.Vendor;
                 newProvider.UserSelections.Add(CurrentUserSelection);
@@ -182,7 +183,6 @@ namespace YMLParser.Controllers
                     }
                 }
                 CurrentUserSelection.AddedProviders.Add(newProvider);
-
                 _db.Entry(CurrentUserSelection).State = EntityState.Modified;
                 _db.Entry(newProvider).State = EntityState.Modified;
                 await _db.SaveChangesAsync();

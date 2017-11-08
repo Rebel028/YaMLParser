@@ -65,6 +65,16 @@ namespace YMLParser.Controllers
             return PartialView(outputLink);
         }
 
+        [HttpPost]
+        public async Task<ActionResult> Details(OutputLink outputLink)
+        {
+            if (outputLink == null)
+            {
+                return HttpNotFound();
+            }
+            return PartialView(outputLink);
+        }
+
         // GET: OutputLinks/Create
         public ActionResult Create()
         {
@@ -73,10 +83,11 @@ namespace YMLParser.Controllers
 
             var vendorsList = CurrentUserSelection.AddedProviders;
             ViewBag.Categories = db.Providers.Include(p => p.Categories).ToList();
+            ViewBag.Providers = vendorsList.ToList();
 
             ViewBag.UserSelectionId = new SelectList(db.UserSelections, "Id", "UserId");
 
-            return View(vendorsList);
+            return View(CurrentUserSelection);
         }
 
         // POST: OutputLinks/Create
@@ -84,17 +95,33 @@ namespace YMLParser.Controllers
         // сведения см. в статье https://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<ActionResult> Create([Bind(Include = "Id,Link,UserSelectionId")] OutputLink outputLink)
+        public async Task<ActionResult> Create([Bind(Include = "Id,Name,UserSelectionId")] OutputLink outputLink,
+            List<string>selected)
         {
             if (ModelState.IsValid)
             {
-                db.OutputLinks.Add(outputLink);
-                await db.SaveChangesAsync();
-                return RedirectToAction("Index");
+                try
+                {
+                    var lookup = selected.ToLookup(x => x.Split('_')[0], x=>x.Split('_')[1]);
+
+                    var parser = new Parser(db);
+                    var output = parser.SelectCategories(lookup);
+                    var file = parser.SaveFile(output);
+                    outputLink.Link = this.Url.Action("Link", new {id = file.Id});
+
+                    db.OutputLinks.Add(outputLink);
+                    await db.SaveChangesAsync();
+                    return PartialView("Details", outputLink);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                }
+
             }
 
             ViewBag.UserSelectionId = new SelectList(db.UserSelections, "Id", "UserId", outputLink.UserSelectionId);
-            return View(outputLink);
+            return RedirectToAction("Index");
         }
 
         // GET: OutputLinks/Edit/5
@@ -154,6 +181,23 @@ namespace YMLParser.Controllers
             db.OutputLinks.Remove(outputLink);
             await db.SaveChangesAsync();
             return RedirectToAction("Index");
+        }
+
+        
+        public async Task<ActionResult> Link(int? id)
+        {
+            if (id!=null)
+            {
+                var file = await db.ProviderFiles.FindAsync(id);
+                if (file==null)
+                {
+                    return HttpNotFound();
+                }
+                var fileContent = System.IO.File.ReadAllBytes(file.FilePath);
+
+                return File(fileContent, file.FileType);
+            }
+            return HttpNotFound();
         }
 
         protected override void Dispose(bool disposing)

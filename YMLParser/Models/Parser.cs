@@ -16,6 +16,24 @@ namespace YMLParser
         public Dictionary<string, string> CatDictionary = new Dictionary<string, string>();
         public string ProviderName=string.Empty;
 
+        private ApplicationDbContext _db;
+        private readonly bool _disposeDbOnExit;
+        //Где хранятся файлы
+        private static readonly string Root = AppContext.BaseDirectory;
+        private static readonly string FilesFolder = Root + "App_Data\\";
+
+
+        public Parser()
+        {
+            _db = new ApplicationDbContext();
+            _disposeDbOnExit = true;
+        }
+
+        public Parser(ApplicationDbContext db)
+        {
+            this._db = db;
+        }
+
         public static Task<XDocument> LinkToXDocument(string link)
         {
             return Task.Run(async () =>
@@ -219,6 +237,28 @@ namespace YMLParser
         }
 
         /// <summary>
+        /// Создать файл только с выбранными категориями и поставщиками
+        /// </summary>
+        /// <param name="selectedCategories"><see cref="Lookup{TKey,TElement}"/> с парами типа "поставщик-категория"</param>
+        /// <returns>Документ</returns>
+        public XDocument SelectCategories(ILookup<string, string> selectedCategories)
+        {
+            XDocument result = new XDocument();
+            result.Add(new XElement("root"));
+            foreach (var group in selectedCategories)
+            {
+                var path = FindProviderFile(group.Key).FilePath;
+                var xdoc = XDocument.Load(path);
+                var list = group.ToList();
+                var categoriesFile = SelectCategories(xdoc, list);
+                result.Root.Add(categoriesFile.Descendants("shop"));
+            }
+
+            return result;
+        }
+
+
+        /// <summary>
         /// Парсит категории
         /// </summary>
         /// <param name="categories"></param>
@@ -260,13 +300,13 @@ namespace YMLParser
         /// Парсит и сохраняет файл
         /// </summary>
         /// <param name="link">ссылка на файл</param>
-        public Task<FileOutput> ParseFile(string link)
+        public Task<FileOutput> ParseSingleFile(string link)
         {
             return Task.Run(async () =>
             {
                 var input = await LinkToXDocument(link);
                 var xdoc = CreateDocument(input);
-                return SaveFile(xdoc);
+                return SaveInitial(xdoc);
             });
         }
 
@@ -275,7 +315,7 @@ namespace YMLParser
         /// </summary>
         /// <param name="output"></param>
         /// <returns></returns>
-        private FileOutput SaveFile(XDocument output)
+        public FileOutput SaveFile(XDocument output)
         {
             FileOutput file = new FileOutput
             {
@@ -284,11 +324,9 @@ namespace YMLParser
                 Vendor = ProviderName,
                 Categories = CatDictionary
             };
-            var root = AppContext.BaseDirectory;
-            var path = root+"App_Data\\";
-            file.FilePath = path + file.FileName;
+            file.FilePath = FilesFolder + file.FileName;
             //проверяем, существует ли папка
-            if (!Directory.Exists(path)) Directory.CreateDirectory(path);
+            if (!Directory.Exists(FilesFolder)) Directory.CreateDirectory(FilesFolder);
             //Пишем файл
             file.Info = new FileInfo(file.FilePath);
             if (!file.Info.Exists)
@@ -297,8 +335,50 @@ namespace YMLParser
                 output.Save(stream);
                 stream.Close();
             }
-
+            _db.ProviderFiles.Add(file);
             return file;
+        }
+
+        /// <summary>
+        /// Сохраняет файл на сервер
+        /// </summary>
+        /// <param name="output"></param>
+        /// <returns></returns>
+        public FileOutput SaveInitial(XDocument output)
+        {
+            FileOutput file = new FileOutput
+            {
+                FileType = "application/xml",
+                FileName = "Init" + ProviderName + DateTime.Now.ToString("_yyyyMMdd") + ".xml",
+                Vendor = ProviderName,
+                Categories = CatDictionary
+            };
+            file.FilePath = FilesFolder + file.FileName;
+            //проверяем, существует ли папка
+            if (!Directory.Exists(FilesFolder)) Directory.CreateDirectory(FilesFolder);
+            //Пишем файл
+            file.Info = new FileInfo(file.FilePath);
+            if (!file.Info.Exists)
+            {
+                var stream = file.Info.Create();
+                output.Save(stream);
+                stream.Close();
+            }
+            _db.ProviderFiles.Add(file);
+            return file;
+        }
+
+        private FileOutput FindProviderFile(string providerName)
+        {
+            return _db.ProviderFiles.First(fo => fo.Vendor == providerName);
+        }
+
+        ~Parser()
+        {
+            if (_disposeDbOnExit)
+            {
+                _db.Dispose();
+            }
         }
     }
 }

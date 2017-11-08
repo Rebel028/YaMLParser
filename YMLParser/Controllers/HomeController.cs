@@ -38,7 +38,7 @@ namespace YMLParser.Controllers
             Parser parser = new Parser();
 
             //поучаем результат
-            FileOutput file = await parser.ParseFile(link);
+            FileOutput file = await parser.ParseSingleFile(link);
 
             //return File(file.Info.OpenRead(), file.FileType, file.FileName);
             return PartialView("ConvertPartial", file);
@@ -119,7 +119,6 @@ namespace YMLParser.Controllers
             string fileName = newFile.FileName;
             string filePath = newFile.FilePath;
 
-            FileInfo info = new FileInfo(filePath);
             byte[] fileConent = System.IO.File.ReadAllBytes(filePath);
             var cd = new System.Net.Mime.ContentDisposition
             {

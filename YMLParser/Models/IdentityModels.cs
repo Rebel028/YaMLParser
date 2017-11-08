@@ -34,6 +34,7 @@ namespace YMLParser.Models
         public DbSet<OutputLink> OutputLinks { get; set; }
         public DbSet<UserSelection> UserSelections { get; set; }
         public DbSet<Category> Categories { get; set; }
+        public DbSet<FileOutput> ProviderFiles { get; set; }
 
         //protected override void OnModelCreating(DbModelBuilder modelBuilder)
         //{

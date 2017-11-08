@@ -1,19 +1,20 @@
 ﻿@using System.Net.Mime
-@model IEnumerable<YMLParser.Models.Provider>
+@*@model IEnumerable<YMLParser.Models.Provider>*@
+@model YMLParser.Models.UserSelection
 
 @{
     ViewBag.Title = "Create";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h2>Create</h2>
+<h2>Создать ссылку</h2>
 
 
 @using (Ajax.BeginForm(new AjaxOptions{UpdateTargetId = "createdlink"})) 
 {
     @Html.AntiForgeryToken()
     
-    foreach (var provider in Model)
+    foreach (var provider in Model.AddedProviders)
     {
         <div class="panel panel-default">
             <div class="panel-heading">
@@ -33,9 +34,13 @@
                             foreach (var category in provider.Categories)
                             {
                                 var checkboxId = provider.Id + "_" + category.Id;
+                                var checkboxName = provider.Name + "_" + category.Name;
                                 <div class="col-md-4 checkbox checkbox-primary">
-                                    @Html.CheckBox("selected", true, new {@id = checkboxId, @value = checkboxId})
-                                    @Html.Label("name", category.Name, new {@for = checkboxId, @style = "margin-bottom: 0;"})
+                                    <label>
+                                        <input type="checkbox" name="selected" value="@checkboxName"> @category.Name
+                                    </label>
+                                    @*@Html.CheckBox("selected", true, new {@id = checkboxId, @value = checkboxId})
+                                    @Html.Label("name", category.Name, new {@for = checkboxId, @style = "margin-bottom: 0;"})*@
                                 </div>
                             }
                         }
@@ -51,8 +56,9 @@
 
 
         <div class="form-group">
-            <div class="col-md-offset-2 col-md-10">
-                <input type="submit" value="Создать" class="btn btn-default" />
+            <div class="col-md-offset-2 col-md-10 input-group">
+                @Html.TextBox("Name", "Ссылка "+DateTime.Now.ToString("ddMMyyHHmmss"), new {@class=""})
+                <input type="submit" value="Создать" class="btn btn-default"/>
             </div>
         </div>
 }

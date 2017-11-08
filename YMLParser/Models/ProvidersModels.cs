@@ -88,6 +88,14 @@ namespace YMLParser.Models
         [DisplayName("Ссылка на исходящий файл")]
         public string Link { get; set; }
 
+        [ForeignKey("File")]
+        public int? File_Id { get; set; }
+
+        /// <summary>
+        /// Файл
+        /// </summary>
+        public  FileOutput File { get; set; }
+
         /// <summary>
         /// Поставщики, включенные в ссылку
         /// </summary>

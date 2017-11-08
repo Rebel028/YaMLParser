@@ -33,10 +33,10 @@
     </h4>
     <div>
         <ul>
-        @foreach (Category category in Model.Categories)
+        @foreach (var category in Model.Categories)
         {
-            <li>
-                @Html.DisplayText(category.Name);
+            <li class="col-md-4">
+                @category.Name;
             </li>
         }
         </ul>
