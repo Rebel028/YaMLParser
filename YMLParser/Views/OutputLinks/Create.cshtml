@@ -3,7 +3,7 @@
 @model YMLParser.Models.UserSelection
 
 @{
-    ViewBag.Title = "Create";
+    ViewBag.Title = "Создать ссылку";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
@@ -56,16 +56,19 @@
 
 
         <div class="form-group">
-            <div class="col-md-offset-2 col-md-10 input-group">
-                @Html.TextBox("Name", "Ссылка "+DateTime.Now.ToString("ddMMyyHHmmss"), new {@class=""})
-                <input type="submit" value="Создать" class="btn btn-default"/>
+            <div class="col-md-5 input-group">
+                @Html.TextBox("Name", "", new {@class = "form-control", @placeholder = "Введите имя ссылки..." })
+                @Html.Hidden("Name", "Ссылка " + DateTime.Now.ToString("ddMMyyHHmmss"))
+                <span class="input-group-btn">
+                    <input type="submit" value="Создать" class="btn btn-default" />
+                </span>
             </div>
         </div>
 }
-<div id="createdLink">
+<div class="col-md-12" id="createdlink">
     
 </div>
-<div>
+<div class="col-md-12">
     @Html.ActionLink("К списку ссылок", "Index")
 </div>
 

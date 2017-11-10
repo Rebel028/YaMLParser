@@ -5,10 +5,10 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h2>Index</h2>
+<h2>Ссылки</h2>
 
 <p>
-    @Html.ActionLink("Create New", "Create")
+    @Html.ActionLink("Создать", "Create")
 </p>
 <table class="table">
     <tr>
@@ -31,9 +31,9 @@
                 @Html.DisplayFor(modelItem => item.Link)
             </td>
             <td>
-                @Html.ActionLink("Edit", "Edit", new {id = item.Id}) |
-                @Ajax.ActionLink("Details", "Details", new object(),new AjaxOptions{UpdateTargetId = "details"+item.Id}, new {id = item.Id}) |
-                @Html.ActionLink("Delete", "Delete", new {id = item.Id})
+                @Html.ActionLink("Прака", "Edit", new {id = item.Id}) |
+                @Ajax.ActionLink("Подробно", "Details", new object(),new AjaxOptions{UpdateTargetId = "details"+item.Id}, new {id = item.Id}) |
+                @Html.ActionLink("Удалить", "Delete", new {id = item.Id})
             </td>
         </tr>
 

@@ -34,10 +34,10 @@ namespace YMLParser.Controllers
         {
             CurrentUserSelection = db.UserSelections.First(s => s.UserId == CurrentUser.Id);
             var providers = db.Providers.Include(p => p.UserSelections);
-            var links = db.OutputLinks.Include(p => p.SelectedProviders);
+            //var links = db.OutputLinks.Include(p => p.SelectedProviders);
 
             ViewBag.Providers = providers.ToList();
-            ViewBag.Links = links.ToList();
+            //ViewBag.Links = links.ToList();
         }
 
         // GET: OutputLinks
@@ -98,19 +98,27 @@ namespace YMLParser.Controllers
         public async Task<ActionResult> Create([Bind(Include = "Id,Name,UserSelectionId")] OutputLink outputLink,
             List<string>selected)
         {
-            if (ModelState.IsValid)
+            if (ModelState.IsValid && selected.Count>0)
             {
+                GetCurrentUserInfo();
+                GetUserSelection();
+
                 try
                 {
-                    var lookup = selected.ToLookup(x => x.Split('_')[0], x=>x.Split('_')[1]);
+                    outputLink.Selected = string.Join(";",selected.ToArray());
 
                     var parser = new Parser(db);
-                    var output = parser.SelectCategories(lookup);
+                    var output = parser.SelectCategories(outputLink.SelectedLookup);
+                    
                     var file = parser.SaveFile(output);
-                    outputLink.Link = this.Url.Action("Link", new {id = file.Id});
-
+                    db.SaveChanges();
+                    outputLink.Link = this.Url.Action("Link","OutputLinks", new {id = file.Id}, Request.Url.Scheme);
+                    outputLink.UserSelection = CurrentUserSelection;
                     db.OutputLinks.Add(outputLink);
                     await db.SaveChangesAsync();
+                    CurrentUserSelection.ExistingLinks.Add(outputLink);
+                    await db.SaveChangesAsync();
+
                     return PartialView("Details", outputLink);
                 }
                 catch (Exception e)
@@ -121,7 +129,7 @@ namespace YMLParser.Controllers
             }
 
             ViewBag.UserSelectionId = new SelectList(db.UserSelections, "Id", "UserId", outputLink.UserSelectionId);
-            return RedirectToAction("Index");
+            return HttpNotFound();
         }
 
         // GET: OutputLinks/Edit/5
@@ -188,7 +196,7 @@ namespace YMLParser.Controllers
         {
             if (id!=null)
             {
-                var file = await db.ProviderFiles.FindAsync(id);
+                var file = await db.OutputFiles.FindAsync(id);
                 if (file==null)
                 {
                     return HttpNotFound();

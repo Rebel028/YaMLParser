@@ -1,7 +1,7 @@
 ﻿@model YMLParser.Models.UserSelection
 
 @{
-    ViewBag.Title = "Index";
+    ViewBag.Title = "Поставщики";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
@@ -67,7 +67,7 @@
     </div>
 </div>
 
-<a class="btn btn-block" href="@Url.Action("Create","OutputLinks")" >
+<a class="btn btn-primary" href="@Url.Action("Create","OutputLinks")" >
     Сформировать XML
 </a>
 
@@ -104,8 +104,8 @@
                                 </td>
                                 <td>
                                     @*@Html.ActionLink("Правка", "Edit", new { id=item.Id }) |*@
-                                    @Html.ActionLink("Подробно", "Details", new {id = item.Id}) |
-                                    @Html.ActionLink("Удалить", "Delete", new {id = item.Id})
+                                    @Html.ActionLink("Подробно", "Details","OutputLinks", new {id = item.Id}, null) |
+                                    @Html.ActionLink("Удалить", "Delete", "OutputLinks", new {id = item.Id}, null)
                                 </td>
                             </tr>
                         }

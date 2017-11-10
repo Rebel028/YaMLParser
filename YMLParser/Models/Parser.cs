@@ -14,7 +14,7 @@ namespace YMLParser
     {
         private int _imageCounter = 0;
         public Dictionary<string, string> CatDictionary = new Dictionary<string, string>();
-        public string ProviderName=string.Empty;
+        public string ProviderName="Multiple";
 
         private ApplicationDbContext _db;
         private readonly bool _disposeDbOnExit;
@@ -306,7 +306,7 @@ namespace YMLParser
             {
                 var input = await LinkToXDocument(link);
                 var xdoc = CreateDocument(input);
-                return SaveInitial(xdoc);
+                return SaveFile(xdoc);
             });
         }
 
@@ -335,42 +335,14 @@ namespace YMLParser
                 output.Save(stream);
                 stream.Close();
             }
-            _db.ProviderFiles.Add(file);
-            return file;
-        }
-
-        /// <summary>
-        /// Сохраняет файл на сервер
-        /// </summary>
-        /// <param name="output"></param>
-        /// <returns></returns>
-        public FileOutput SaveInitial(XDocument output)
-        {
-            FileOutput file = new FileOutput
-            {
-                FileType = "application/xml",
-                FileName = "Init" + ProviderName + DateTime.Now.ToString("_yyyyMMdd") + ".xml",
-                Vendor = ProviderName,
-                Categories = CatDictionary
-            };
-            file.FilePath = FilesFolder + file.FileName;
-            //проверяем, существует ли папка
-            if (!Directory.Exists(FilesFolder)) Directory.CreateDirectory(FilesFolder);
-            //Пишем файл
-            file.Info = new FileInfo(file.FilePath);
-            if (!file.Info.Exists)
-            {
-                var stream = file.Info.Create();
-                output.Save(stream);
-                stream.Close();
-            }
-            _db.ProviderFiles.Add(file);
+            _db.OutputFiles.Add(file);
             return file;
         }
 
         private FileOutput FindProviderFile(string providerName)
         {
-            return _db.ProviderFiles.First(fo => fo.Vendor == providerName);
+            var test = _db.OutputFiles.Where(f => f.Vendor == providerName && f.FileName.StartsWith("Init"));
+            return _db.OutputFiles.First(f => f.Vendor == providerName && f.FileName.StartsWith("Init"));
         }
 
         ~Parser()

@@ -38,10 +38,11 @@ namespace YMLParser.Controllers
         {
             CurrentUserSelection = _db.UserSelections.First(s => s.UserId == CurrentUser.Id);
             var providers = _db.Providers.Include(p => p.UserSelections);
-            var links = _db.OutputLinks.Include(p => p.SelectedProviders);
+            var links = _db.OutputLinks.Include(p => p.UserSelection);
 
             ViewBag.Providers = providers.ToList();
-            ViewBag.Links = links.ToList();
+            ViewBag.Links = CurrentUserSelection.ExistingLinks.ToList();
+            ViewBag.Link = links.ToList();
         }
 
         private void CreateUserSelection()
@@ -260,7 +261,16 @@ namespace YMLParser.Controllers
             CurrentUserSelection.AddedProviders.Remove(provider);
             provider.UserSelections.Remove(CurrentUserSelection);
             //удаляем поставщика если больше никем не используется
-            _db.Entry(provider).State = provider.UserSelections.Count < 1 ? EntityState.Deleted : EntityState.Modified;
+            if (provider.UserSelections.Count<1)
+            {
+                _db.Entry(provider).State = EntityState.Deleted;
+                var remove = _db.OutputFiles.Where(f => f.Vendor == provider.Name);
+                _db.OutputFiles.RemoveRange(remove);
+            }
+            else
+            {
+                _db.Entry(provider).State = EntityState.Modified;
+            }
 
             _db.Entry(CurrentUserSelection).State = EntityState.Modified;
             await _db.SaveChangesAsync();

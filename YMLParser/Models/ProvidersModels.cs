@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data.Entity;
+using System.IO;
 using System.Linq;
 using System.Web;
 
@@ -94,28 +95,30 @@ namespace YMLParser.Models
         /// <summary>
         /// Файл
         /// </summary>
-        public  FileOutput File { get; set; }
+        public FileOutput File { get; set; }
 
         /// <summary>
-        /// Поставщики, включенные в ссылку
+        /// Выбранные категории
         /// </summary>
-        public ICollection<Provider> SelectedProviders { get; set; }
+        public string Selected { private get; set; }
 
         /// <summary>
-        /// Категории, включенные в ссылку
+        /// Выбранные категории
         /// </summary>
-        public ICollection<Category> SelectedCategories { get; set; }
+        public ILookup<string, string> SelectedLookup
+        {
+            get
+            {
+                string[] tab = this.Selected.Split(';');
+                return tab.ToLookup(x => x.Split('_')[0], x => x.Split('_')[1]);
+            }
+        }
 
         [ForeignKey("UserSelection")]
         public int? UserSelectionId { get; set; }
 
         public UserSelection UserSelection { get; set; }
-
-        public OutputLink()
-        {
-            SelectedProviders = new List<Provider>();
-            SelectedCategories = new List<Category>();
-        }
+        
     }
 
     public class Category
@@ -153,12 +156,38 @@ namespace YMLParser.Models
         public ICollection<Provider> Owners { get; set; }
 
 
-        public ICollection<OutputLink> Links { get; set; }
-
         public Category()
         {
             AliasesList = new List<string>();
             Owners = new List<Provider>();
         }
+    }
+
+    public class FileOutput
+    {
+        public int Id { get; set; }
+
+        /// <summary>
+        /// Имя файла
+        /// </summary>
+        public string FileName { get; set; }
+        /// <summary>
+        /// Путь к файлу
+        /// </summary>
+        public string FilePath { get; set; }
+        /// <summary>
+        /// Имя поставщика
+        /// </summary>
+        public string Vendor { get; set; }
+        /// <summary>
+        /// MIME-тип файла
+        /// </summary>
+        public string FileType { get; set; }
+        /// <summary>
+        /// Словарь категорий
+        /// </summary>
+        public Dictionary<string, string> Categories { get; set; }
+        [NotMapped]
+        public FileInfo Info { get; set; }
     }
 }

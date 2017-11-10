@@ -32,7 +32,7 @@ namespace YMLParser
                     try
                     {
                         FileInfo fi = new FileInfo(file);
-                        if (fi.CreationTime < DateTime.Now.AddDays(-7))
+                        if (fi.CreationTime < DateTime.Now.AddDays(-3))
                         {
                             File.Delete(file);
                         }
