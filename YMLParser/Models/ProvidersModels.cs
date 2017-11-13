@@ -100,7 +100,7 @@ namespace YMLParser.Models
         /// <summary>
         /// Выбранные категории
         /// </summary>
-        public string Selected { private get; set; }
+        public string Selected { get; set; }
 
         /// <summary>
         /// Выбранные категории

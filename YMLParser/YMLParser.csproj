@@ -217,6 +217,10 @@
     <Compile Include="Migrations\201711100935556_lookup.Designer.cs">
       <DependentUpon>201711100935556_lookup.cs</DependentUpon>
     </Compile>
+    <Compile Include="Migrations\201711121245185_get.cs" />
+    <Compile Include="Migrations\201711121245185_get.Designer.cs">
+      <DependentUpon>201711121245185_get.cs</DependentUpon>
+    </Compile>
     <Compile Include="Migrations\Configuration.cs" />
     <Compile Include="Models\AccountViewModels.cs" />
     <Compile Include="Models\IdentityModels.cs" />
@@ -334,6 +338,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Migrations\201711100935556_lookup.resx">
       <DependentUpon>201711100935556_lookup.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201711121245185_get.resx">
+      <DependentUpon>201711121245185_get.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <PropertyGroup>

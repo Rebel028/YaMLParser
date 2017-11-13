@@ -111,7 +111,7 @@ namespace YMLParser.Controllers
                     var output = parser.SelectCategories(outputLink.SelectedLookup);
                     
                     var file = parser.SaveFile(output);
-                    db.SaveChanges();
+
                     outputLink.Link = this.Url.Action("Link","OutputLinks", new {id = file.Id}, Request.Url.Scheme);
                     outputLink.UserSelection = CurrentUserSelection;
                     db.OutputLinks.Add(outputLink);

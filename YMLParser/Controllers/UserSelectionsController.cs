@@ -164,7 +164,7 @@ namespace YMLParser.Controllers
                 newProvider.Name = output.Vendor;
                 newProvider.UserSelections.Add(CurrentUserSelection);
                 //парсим категории
-                var сategories = ParseCategories(output.Categories.Values.ToList());
+                var сategories = Parser.ParseCategories(output.Categories.Values.ToList());
                 //добавляем их куда надо
                 foreach (Category category in сategories)
                 {
@@ -278,27 +278,7 @@ namespace YMLParser.Controllers
             return RedirectToAction("Index");
         }
 
-        /// <summary>
-        /// Парсит категории в список из объектов <see cref="Category"/>
-        /// </summary>
-        /// <param name="categoriesList">Входящий список категорий</param>
-        /// <returns></returns>
-        private static List<Category> ParseCategories(IList<string> categoriesList)
-        {
-            List<Category> Categories = new List<Category>();
-            foreach (string category in categoriesList)
-            {
-                var cat = new Category
-                {
-                    Name = category,
-                };
-                var sb = new StringBuilder();
-                sb.Append(cat.Name+",");
-                cat.Aliases = sb.ToString();
-                Categories.Add(cat);
-            }
-            return Categories;
-        }
+        
 
         protected override void Dispose(bool disposing)
         {

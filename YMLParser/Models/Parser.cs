@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using System.Web;
 using System.Xml.Linq;
@@ -306,7 +307,7 @@ namespace YMLParser
             {
                 var input = await LinkToXDocument(link);
                 var xdoc = CreateDocument(input);
-                return SaveFile(xdoc);
+                return SaveInitial(xdoc);
             });
         }
 
@@ -334,15 +335,73 @@ namespace YMLParser
                 var stream = file.Info.Create();
                 output.Save(stream);
                 stream.Close();
+                _db.OutputFiles.Add(file);
             }
-            _db.OutputFiles.Add(file);
+            else
+            {
+                var stream = file.Info.Create();
+                output.Save(stream);
+                stream.Close();
+            }
+            return file;
+        }
+
+        public FileOutput SaveInitial(XDocument output)
+        {
+            FileOutput file = new FileOutput
+            {
+                FileType = "application/xml",
+                FileName = ProviderName + ".xml",
+                Vendor = ProviderName,
+                Categories = CatDictionary
+            };
+            file.FilePath = FilesFolder + file.FileName;
+            //проверяем, существует ли папка
+            if (!Directory.Exists(FilesFolder)) Directory.CreateDirectory(FilesFolder);
+            //Пишем файл
+            file.Info = new FileInfo(file.FilePath);
+            if (!file.Info.Exists)
+            {
+                var stream = file.Info.Create();
+                output.Save(stream);
+                stream.Close();
+                _db.OutputFiles.Add(file);
+            }
+            else
+            {
+                var stream = file.Info.Create();
+                output.Save(stream);
+                stream.Close();
+            }
             return file;
         }
 
         private FileOutput FindProviderFile(string providerName)
         {
             var test = _db.OutputFiles.Where(f => f.Vendor == providerName && f.FileName.StartsWith("Init"));
-            return _db.OutputFiles.First(f => f.Vendor == providerName && f.FileName.StartsWith("Init"));
+            return _db.OutputFiles.First(f => f.Vendor == providerName);
+        }
+
+        /// <summary>
+        /// Парсит категории в список из объектов <see cref="Category"/>
+        /// </summary>
+        /// <param name="categoriesList">Входящий список категорий</param>
+        /// <returns></returns>
+        public static List<Category> ParseCategories(IList<string> categoriesList)
+        {
+            List<Category> Categories = new List<Category>();
+            foreach (string category in categoriesList)
+            {
+                var cat = new Category
+                {
+                    Name = category,
+                };
+                var sb = new StringBuilder();
+                sb.Append(cat.Name + ",");
+                cat.Aliases = sb.ToString();
+                Categories.Add(cat);
+            }
+            return Categories;
         }
 
         ~Parser()
