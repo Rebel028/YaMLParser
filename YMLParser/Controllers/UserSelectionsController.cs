@@ -12,6 +12,7 @@ using System.Web;
 using System.Web.Mvc;
 using Microsoft.AspNet.Identity;
 using Microsoft.AspNet.Identity.Owin;
+using WebGrease.Css.Extensions;
 using YMLParser.Models;
 
 namespace YMLParser.Controllers
@@ -168,7 +169,7 @@ namespace YMLParser.Controllers
                 //добавляем их куда надо
                 foreach (Category category in сategories)
                 {
-                    if (!_db.Categories.Any(c=>c.Aliases.Contains(category.Name))) //если такой категории нет в БД
+                    if (!_db.Categories.Any(c => c.Name.ToLower() == category.Name.ToLower())) //если такой категории нет в БД
                     {
                         category.Owners.Add(newProvider);
                         newProvider.Categories.Add(category);
@@ -177,7 +178,7 @@ namespace YMLParser.Controllers
                     else //если она есть
                     {
                         //находим ее
-                        var existingCategory = _db.Categories.First(c => c.Aliases.Contains(category.Name));
+                        var existingCategory = _db.Categories.First(c => c.Name.ToLower() == category.Name.ToLower()); //
                         existingCategory.Owners.Add(newProvider);
                         newProvider.Categories.Add(existingCategory);
                         _db.Entry(existingCategory).State = EntityState.Modified;
@@ -185,8 +186,8 @@ namespace YMLParser.Controllers
                 }
                 CurrentUserSelection.AddedProviders.Add(newProvider);
                 _db.Entry(CurrentUserSelection).State = EntityState.Modified;
-                _db.Entry(newProvider).State = EntityState.Modified;
-                await _db.SaveChangesAsync();
+                _db.Entry(newProvider).State = EntityState.Added;
+                _db.SaveChanges();
                 return RedirectToAction("Index", CurrentUserSelection);
             }
 

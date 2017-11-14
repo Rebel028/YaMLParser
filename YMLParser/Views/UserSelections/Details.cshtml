@@ -33,7 +33,7 @@
     </h4>
     <div>
         <ul>
-        @foreach (var category in Model.Categories)
+        @foreach (Category category in ViewBag.Categories)
         {
             <li class="col-md-4">
                 @category.Name;

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -161,7 +162,15 @@ namespace YMLParser
                     output.Add(new XElement("production_time", element.Value));
                     break;
                 case "categoryId":
-                    output.Add(new XElement("category", CatDictionary[element.Value]));
+                    try
+                    {
+                        output.Add(new XElement("category", CatDictionary[element.Value]));
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.WriteLine(e);
+                        output.Add(new XElement("category", "Unknown"));
+                    }
                     break;
                 case "param":
                     var par = ParseParam(element);
@@ -397,7 +406,7 @@ namespace YMLParser
                     Name = category,
                 };
                 var sb = new StringBuilder();
-                sb.Append(cat.Name + ",");
+                sb.Append(cat.Name + ";");
                 cat.Aliases = sb.ToString();
                 Categories.Add(cat);
             }

@@ -144,10 +144,10 @@ namespace YMLParser.Models
         {
             get
             {
-                string[] tab = this.Aliases.Split(',');
+                string[] tab = this.Aliases.Split(';');
                 return tab.ToList();
             }
-            set { this.Aliases = string.Join(",", value.ToArray()); }
+            set { this.Aliases = string.Join(";", value.ToArray()); }
         }
 
         /// <summary>
