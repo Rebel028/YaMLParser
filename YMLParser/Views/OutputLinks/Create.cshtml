@@ -55,7 +55,7 @@
     }
 
 
-        <div class="form-group">
+        <div class="col-md-12 form-group">
             <div class="col-md-5 input-group">
                 @Html.TextBox("Name", "", new {@class = "form-control", @placeholder = "Введите имя ссылки..." })
                 @Html.Hidden("Name", "Ссылка " + DateTime.Now.ToString("ddMMyyHHmmss"))

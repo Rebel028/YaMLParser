@@ -194,18 +194,15 @@ namespace YMLParser.Controllers
         
         public async Task<ActionResult> Link(int? id)
         {
-            if (id!=null)
+            if (id == null) return HttpNotFound();
+            var file = await db.OutputFiles.FindAsync(id);
+            if (file==null)
             {
-                var file = await db.OutputFiles.FindAsync(id);
-                if (file==null)
-                {
-                    return HttpNotFound();
-                }
-                var fileContent = System.IO.File.ReadAllBytes(file.FilePath);
-
-                return File(fileContent, file.FileType);
+                return HttpNotFound();
             }
-            return HttpNotFound();
+            var fileContent = System.IO.File.ReadAllBytes(file.FilePath);
+
+            return File(fileContent, file.FileType);
         }
 
         protected override void Dispose(bool disposing)

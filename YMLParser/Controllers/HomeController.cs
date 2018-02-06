@@ -38,8 +38,11 @@ namespace YMLParser.Controllers
             Parser parser = new Parser();
 
             //поучаем результат
-            FileOutput file = await parser.ParseSingleFile(link);
-
+            FileOutput file = await parser.ParseInitialFile(link);
+            if (file == null)
+            {
+                return Content("Ссылка на XML не верна!");
+            }
             //return File(file.Info.OpenRead(), file.FileType, file.FileName);
             return PartialView("ConvertPartial", file);
         }
@@ -64,7 +67,7 @@ namespace YMLParser.Controllers
                             System.IO.File.Delete(path);
                         }
                         Parser parser = new Parser();
-                        var output = parser.CreateDocument(xdoc);
+                        var output = parser.CreateBaseDocument(xdoc);
                         //поучаем результат
                         FileOutput file = SaveFile(output);
                         file.Categories = parser.CatDictionary;
@@ -74,6 +77,8 @@ namespace YMLParser.Controllers
                 }
                 else // если больше
                 {
+                    return View("Index");
+
                     List<XDocument> files = new List<XDocument>();
                     foreach (HttpPostedFileBase file in Request.Files)
                     {
@@ -91,7 +96,6 @@ namespace YMLParser.Controllers
                         }
                     }
                     Parser parser = new Parser();
-                    var output = parser.CreateDocument(files.ToArray());
                 }
 
             }
@@ -113,7 +117,7 @@ namespace YMLParser.Controllers
 
             var xdoc = XDocument.Load(file.FilePath);
             Parser parser = new Parser();
-            var output = parser.SelectCategories(xdoc, categories);
+            var output = Parser.SelectCategories(xdoc, categories);
             FileOutput newFile = SaveFile(output);
             string fileType = newFile.FileType;
             string fileName = newFile.FileName;
@@ -157,7 +161,6 @@ namespace YMLParser.Controllers
             //проверяем, существует ли папка
             if (!Directory.Exists(path)) Directory.CreateDirectory(path);
             //Пишем файл
-            file.Info = new FileInfo(file.FilePath);
             if (!file.Info.Exists)
             {
                 var stream = file.Info.Create();

@@ -56,23 +56,18 @@ namespace YMLParser
         {
             using (var db = new ApplicationDbContext())
             {
-                foreach (Provider provider in db.Providers.ToList())
+                var providers = db.Providers;
+                if (providers != null)
                 {
-                    //запускаем парсер
-                    Parser parser = new Parser(db);
-                    var output = parser.ParseSingleFile(provider.Link).Result;
-                    
-                    //парсим категории
-                    var сategories = Parser.ParseCategories(output.Categories.Values.ToList());
-                    //добавляем их куда надо
-                    foreach (Category category in сategories)
+                    foreach (Provider provider in providers.ToList())
                     {
-                        if (!db.Categories.Any(c => c.Aliases.Contains(category.Name))) //если такой категории нет в БД
-                        {
-                            category.Owners.Add(provider);
-                            provider.Categories.Add(category);
-                            db.Categories.Add(category);
-                        }
+                        //запускаем парсер
+                        Parser parser = new Parser(db);
+                        var output = parser.ParseInitialFile(provider.Link).Result;
+                        if (output == null) continue;
+                        //парсим категории если что-то поменялось
+                        parser.ParseAllCategories(output.Categories.Values.ToList(), provider);
+                        provider.MainOutputFile = output;
                         db.SaveChanges();
                     }
                 }
@@ -83,17 +78,14 @@ namespace YMLParser
         {
             using (ApplicationDbContext db = new ApplicationDbContext())
             {
-                foreach (var link in db.OutputLinks.ToList())
+                foreach (var link in db.OutputLinks?.ToList()) //берем каждую ссылку
                 {
                     var data = db.OutputLinks.Include(l => l.Selected);
-                    var temp = link.File_Id;
-                    link.File = null;
+                    link.File = null; //убираем у нее файл
                     db.SaveChanges();
                     Parser parser = new Parser(db);
-                    var output = parser.SelectCategories(link.SelectedLookup);
-
-                    var file = parser.SaveFile(output);
-                    file.Id = temp ?? -1;
+                    var output = parser.SelectCategories(link.SelectedLookup); //создаем новый 
+                    link.File = parser.SaveFile(output); //добавляем
                     db.SaveChanges();
                 }
             }

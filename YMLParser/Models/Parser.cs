@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -36,31 +37,128 @@ namespace YMLParser
             this._db = db;
         }
 
-        public static Task<XDocument> LinkToXDocument(string link)
+        /// <summary>
+        /// Загружает файл из ссылки
+        /// </summary>
+        /// <param name="link"></param>
+        /// <returns></returns>
+        private static Task<XDocument> LinkToXDocument(string link)
         {
-            return Task.Run(async () =>
+            if (IsValidUrl(link))
             {
+                return Task.Run(async () =>
+                {
                 //загружаем файл
                 var client = new HttpClient();
-                var response = await client.GetStreamAsync(link);
-                return XDocument.Load(response);
-            });
+                    try
+                    {
+                        var response = await client.GetStreamAsync(link);
+                        return XDocument.Load(response);
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.WriteLine(e.Message);
+                        return null;
+                    }
+                });
+            }
+            return null;
+        }
+
+        #region Categories
+
+        /// <summary>
+        /// Парсит категории в список из объектов <see cref="Category"/>
+        /// </summary>
+        /// <param name="categoriesList">Входящий список имен категорий</param>
+        /// <param name="provider">Поставщик</param>
+        public void ParseAllCategories(IList<string> categoriesList, Provider provider)
+        {
+            CheckNewCategories(categoriesList, provider);
+            RemoveOldCategories(categoriesList, provider);
         }
 
         /// <summary>
-        /// Создает документ из 1 файла
+        ///Провиеряет есть ли новые категории и добавляет их
+        /// </summary>
+        /// <param name="categoriesList">Входящий список имен категорий</param>
+        /// <param name="provider">Поставщик</param>
+        private void CheckNewCategories(IList<string> categoriesList, Provider provider)
+        {
+            //превращаем имена в объекты
+            foreach (string categoryName in categoriesList)
+            {
+                //есть ли такая категория у поставщика?
+                var providerCategory =
+                    provider.Categories.FirstOrDefault(c => c.Name.ToLower() == categoryName.ToLower());
+
+                if (providerCategory == null)
+                {
+                    //есть ли она вообще?
+                    var existingCategory =
+                        _db.Categories.FirstOrDefault(c => c.Name.ToLower() == categoryName.ToLower());
+
+                    if (existingCategory == null) //если нет
+                    {
+                        var category = new Category
+                        {
+                            Name = categoryName,
+                            Aliases = categoryName + ";"
+                        };
+                        category.Owners.Add(provider);
+                        provider.Categories.Add(category);
+                        _db.Categories.Add(category);
+                    }
+                    else
+                    {
+                        existingCategory.Owners.Add(provider);
+                        provider.Categories.Add(existingCategory);
+                        _db.Entry(existingCategory).State = EntityState.Modified;
+                        _db.Entry(provider).State = EntityState.Modified;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Удаляет неиспользуемые категории у поставщика
+        /// </summary>
+        /// <param name="categoriesList">Входящий список имен категорий</param>
+        /// <param name="provider">Поставщик</param>
+        private void RemoveOldCategories(IList<string> categoriesList, Provider provider)
+        {
+            var listToRemove = provider.Categories
+                .Where(providerCategory => !categoriesList
+                .Contains(providerCategory.Name))
+                .ToList();
+            foreach (var category in listToRemove)
+            {
+                provider.Categories.Remove(category);
+                category.Owners.Remove(provider);
+                //TODO: удалять категорию если у нее нет владельцев
+                _db.Entry(category).State = EntityState.Modified;
+                _db.Entry(provider).State = EntityState.Modified;
+            }
+        }
+
+        #endregion
+
+        #region Parsing Mechanism Only
+
+        /// <summary>
+        /// Парсит документ от одного поставщика в формат опенкарта из 1 файла
         /// </summary>
         /// <param name="file">Input file</param>
-        /// <returns></returns>
-        public XDocument CreateDocument(XDocument file)
+        public XDocument CreateBaseDocument(XDocument file)
         {
-            XDocument xdoc = new XDocument();
-            XElement docRoot = new XElement(file.Root.Name);
-            XElement shop = new XElement("shop");
+            XDocument xdoc = new XDocument();//наш новый документ
 
-            XElement root = file.Root.Element("shop");
+            XElement docRoot = new XElement(file.Root.Name); //корень документа 
+            XElement shop = new XElement("shop"); //элемент "shop"
 
-            foreach (XElement item in root.Elements())
+            XElement root = file.Root.Element("shop");//задаем корнем этот элемент
+
+            foreach (XElement item in root.Elements()) //и проходимся по нему
             {
                 if (item.Name == "categories")
                 {
@@ -94,21 +192,21 @@ namespace YMLParser
                     shop.Add(offers);
                 }
             }
-            docRoot.Add(shop);
+            docRoot.Add(shop);//засовываем одно в другое
             xdoc.Add(docRoot);
             return xdoc;
         }
 
         /// <summary>
-        /// Создает документ из неск файлов
+        /// Парсит категории
         /// </summary>
-        /// <param name="files">Input files</param>
-        /// <returns></returns>
-        public XDocument CreateDocument(XDocument[] files)
+        /// <param name="categories"></param>
+        private void ParseCategories(XElement categories)
         {
-            XDocument xdoc = new XDocument();
-
-            return xdoc;
+            foreach (XElement category in categories.Elements())
+            {
+                CatDictionary.Add(category.Attribute("id").Value, category.Value);
+            }
         }
 
         /// <summary>
@@ -196,12 +294,37 @@ namespace YMLParser
         }
 
         /// <summary>
+        /// Парсит элемент &#60;param&#62;
+        /// </summary>
+        private static XElement ParseParam(XElement param)
+        {
+            switch (param.Attribute("name").ToString().ToLower())
+            {
+                case "stock":
+                    return new XElement("stock", param.Value);
+                case "вес":
+                    return new XElement("weight", param.Value);
+                case "высота":
+                    return new XElement("height", param.Value);
+                case "ширина":
+                    return new XElement("width", param.Value);
+                case "глубина":
+                    return new XElement("length", param.Value);
+                case "material":
+                    return new XElement("material", param.Value);
+                case "материал":
+                    return new XElement("material", param.Value);
+                default:
+                    return null;
+            }
+        }
+
+        /// <summary>
         /// Создать файл только с выбранными категориями
         /// </summary>
         /// <param name="file">файл</param>
         /// <param name="selectedCategories">категории</param>
-        /// <returns></returns>
-        public XDocument SelectCategories(XDocument file, IList<string> selectedCategories)
+        public static XDocument SelectCategories(XDocument file, IList<string> selectedCategories)
         {
             XDocument xdoc = new XDocument();
             XElement docRoot = new XElement(file.Root.Name);
@@ -266,57 +389,24 @@ namespace YMLParser
 
             return result;
         }
-
-
-        /// <summary>
-        /// Парсит категории
-        /// </summary>
-        /// <param name="categories"></param>
-        private void ParseCategories(XElement categories)
-        {
-            foreach (XElement category in categories.Elements())
-            {
-                CatDictionary.Add(category.Attribute("id").Value, category.Value);
-            }
-        }
-
-        /// <summary>
-        /// Парсит элемент &#60;param&#62;
-        /// </summary>
-        private XElement ParseParam(XElement param)
-        {
-            switch (param.Attribute("name").ToString().ToLower())
-            {
-                case "stock":
-                    return new XElement("stock", param.Value);
-                case "вес":
-                    return new XElement("weight", param.Value);
-                case "высота":
-                    return new XElement("height", param.Value);
-                case "ширина":
-                    return new XElement("width", param.Value);
-                case "глубина":
-                    return new XElement("length", param.Value);
-                case "material":
-                    return new XElement("material", param.Value);
-                case "материал":
-                    return new XElement("material", param.Value);
-                default:
-                    return null;
-            }
-        }
-
+        
+        #endregion
+        
         /// <summary>
         /// Парсит и сохраняет файл
         /// </summary>
         /// <param name="link">ссылка на файл</param>
-        public Task<FileOutput> ParseSingleFile(string link)
+        public Task<FileOutput> ParseInitialFile(string link)
         {
             return Task.Run(async () =>
             {
-                var input = await LinkToXDocument(link);
-                var xdoc = CreateDocument(input);
-                return SaveInitial(xdoc);
+                var input = await LinkToXDocument(link); //загружаем документ
+                if (input != null)
+                {
+                    var xdoc = CreateBaseDocument(input);
+                    return SaveInitial(xdoc, link);
+                }
+                return null;
             });
         }
 
@@ -327,10 +417,11 @@ namespace YMLParser
         /// <returns></returns>
         public FileOutput SaveFile(XDocument output)
         {
-            FileOutput file = new FileOutput
+            //TODO проверять наличие категорий
+            var file = new FileOutput
             {
                 FileType = "application/xml",
-                FileName = ProviderName + DateTime.Now.ToString("_yyyyMMdd") + ".xml",
+                FileName = ProviderName + DateTime.Now.ToString("_yyyyMMddHHmmss") + ".xml",
                 Vendor = ProviderName,
                 Categories = CatDictionary
             };
@@ -338,24 +429,27 @@ namespace YMLParser
             //проверяем, существует ли папка
             if (!Directory.Exists(FilesFolder)) Directory.CreateDirectory(FilesFolder);
             //Пишем файл
-            file.Info = new FileInfo(file.FilePath);
-            if (!file.Info.Exists)
+            if (file.Info.Exists && file.Info.CreationTime > DateTime.Now.AddDays(-3))//если существует
             {
-                var stream = file.Info.Create();
-                output.Save(stream);
-                stream.Close();
-                _db.OutputFiles.Add(file);
+                return file;
             }
             else
             {
                 var stream = file.Info.Create();
                 output.Save(stream);
                 stream.Close();
+                _db.OutputFiles.Add(file);
+                _db.SaveChanges();
             }
             return file;
         }
 
-        public FileOutput SaveInitial(XDocument output)
+        /// <summary>
+        /// Сохраняет базовый файл поставщика
+        /// </summary>
+        /// <param name="output"></param>
+        /// <param name="link"></param>
+        public FileOutput SaveInitial(XDocument output, string link)
         {
             FileOutput file = new FileOutput
             {
@@ -367,50 +461,49 @@ namespace YMLParser
             file.FilePath = FilesFolder + file.FileName;
             //проверяем, существует ли папка
             if (!Directory.Exists(FilesFolder)) Directory.CreateDirectory(FilesFolder);
+            var provider = _db.Providers.FirstOrDefault(p => p.Link == link);
             //Пишем файл
-            file.Info = new FileInfo(file.FilePath);
-            if (!file.Info.Exists)
+            if (file.Info.Exists)
             {
-                var stream = file.Info.Create();
-                output.Save(stream);
-                stream.Close();
-                _db.OutputFiles.Add(file);
+                try
+                {
+                    if (file.Info.Length == provider.MainOutputFile.Info.Length) //если файл такой же как и был
+                    {
+                        return null;
+                    }
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine(e);
+                    _db.OutputFiles.Add(file);
+                    _db.SaveChanges();
+                }
             }
             else
             {
                 var stream = file.Info.Create();
                 output.Save(stream);
                 stream.Close();
+                _db.OutputFiles.Add(file);
+                _db.SaveChanges();
             }
             return file;
         }
 
+        /// <summary>
+        /// Находит базовый файл поставщика
+        /// </summary>
+        /// <param name="providerName"></param>
         private FileOutput FindProviderFile(string providerName)
         {
             var test = _db.OutputFiles.Where(f => f.Vendor == providerName && f.FileName.StartsWith("Init"));
             return _db.OutputFiles.First(f => f.Vendor == providerName);
         }
 
-        /// <summary>
-        /// Парсит категории в список из объектов <see cref="Category"/>
-        /// </summary>
-        /// <param name="categoriesList">Входящий список категорий</param>
-        /// <returns></returns>
-        public static List<Category> ParseCategories(IList<string> categoriesList)
+
+        private static bool IsValidUrl(string url)
         {
-            List<Category> Categories = new List<Category>();
-            foreach (string category in categoriesList)
-            {
-                var cat = new Category
-                {
-                    Name = category,
-                };
-                var sb = new StringBuilder();
-                sb.Append(cat.Name + ";");
-                cat.Aliases = sb.ToString();
-                Categories.Add(cat);
-            }
-            return Categories;
+            return Uri.IsWellFormedUriString(url, UriKind.RelativeOrAbsolute);
         }
 
         ~Parser()

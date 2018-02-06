@@ -31,7 +31,7 @@
                 @Html.DisplayFor(modelItem => item.Link)
             </td>
             <td>
-                @Html.ActionLink("Прака", "Edit", new {id = item.Id}) |
+                @Html.ActionLink("Правка", "Edit", new {id = item.Id}) |
                 @Ajax.ActionLink("Подробно", "Details", new object(),new AjaxOptions{UpdateTargetId = "details"+item.Id}, new {id = item.Id}) |
                 @Html.ActionLink("Удалить", "Delete", new {id = item.Id})
             </td>

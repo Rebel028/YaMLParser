@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data.Entity;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Web;
@@ -54,6 +55,15 @@ namespace YMLParser.Models
         /// </summary>
         [DisplayName("Ссылка на входящий файл")]
         public string Link { get; set; }
+
+        [ForeignKey("MainOutputFile")]
+        public int? MainOutputFile_Id { get; set; }
+
+        /// <summary>
+        /// Основной исходящий файл
+        /// </summary>
+        [DisplayName("Исходящий файл")]
+        public FileOutput MainOutputFile { get; set; }
 
         /// <summary>
         /// Категории товаров поставщика
@@ -187,7 +197,29 @@ namespace YMLParser.Models
         /// Словарь категорий
         /// </summary>
         public Dictionary<string, string> Categories { get; set; }
+
         [NotMapped]
-        public FileInfo Info { get; set; }
+        public FileInfo Info
+        {
+            get
+            {
+                return new FileInfo(this.FilePath);
+            }
+        }
+
+        ~FileOutput()
+        {
+            if (this.Vendor == "Multiple")
+            {
+                try
+                {
+                    this.Info.Delete();
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine(e.Message);
+                }
+            }
+        }
     }
 }

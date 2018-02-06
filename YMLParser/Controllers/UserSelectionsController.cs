@@ -119,12 +119,13 @@ namespace YMLParser.Controllers
             {
                 return HttpNotFound();
             }
-            Provider provider = CurrentUserSelection.AddedProviders.First(p => p.Id == id);
+            Provider provider = CurrentUserSelection.AddedProviders.FirstOrDefault(p => p.Id == id);
             if (provider == null)
             {
                 return HttpNotFound();
             }
-            ViewBag.Categories = _db.Providers.Include(p => p.Categories);
+            _db.Providers.Include(p => p.Categories);
+            ViewBag.Categories = provider.Categories.ToList();
             return View(provider);
         }
 
@@ -148,42 +149,37 @@ namespace YMLParser.Controllers
             if (ModelState.IsValid)
             {
                 Provider newProvider;
-                if (!_db.Providers.Any(p=>p.Link==provider.Link))
+                //пробиваем поставщика по базе
+                if (_db.Providers.Any(p => p.Link == provider.Link))
+                {
+                    newProvider = await _db.Providers.FirstOrDefaultAsync(p => p.Link == provider.Link);
+                    if (newProvider.MainOutputFile_Id!=null)
+                    {
+                        return PartialView(newProvider);
+                    }
+                }
+                else
                 {
                     newProvider = provider;
                     _db.Providers.Add(provider);
                     _db.SaveChanges();
                 }
-                else
-                {
-                    newProvider = _db.Providers.First(p => p.Link == provider.Link);
-                }
+
                 //запускаем парсер
                 Parser parser = new Parser(_db);
-                var output = await parser.ParseSingleFile(provider.Link);
-
-                newProvider.Name = output.Vendor;
-                newProvider.UserSelections.Add(CurrentUserSelection);
-                //парсим категории
-                var сategories = Parser.ParseCategories(output.Categories.Values.ToList());
-                //добавляем их куда надо
-                foreach (Category category in сategories)
+                //получаем физический файл
+                var output = await parser.ParseInitialFile(provider.Link);
+                if (output == null)
                 {
-                    if (!_db.Categories.Any(c => c.Name.ToLower() == category.Name.ToLower())) //если такой категории нет в БД
-                    {
-                        category.Owners.Add(newProvider);
-                        newProvider.Categories.Add(category);
-                        _db.Categories.Add(category);
-                    }
-                    else //если она есть
-                    {
-                        //находим ее
-                        var existingCategory = _db.Categories.First(c => c.Name.ToLower() == category.Name.ToLower()); //
-                        existingCategory.Owners.Add(newProvider);
-                        newProvider.Categories.Add(existingCategory);
-                        _db.Entry(existingCategory).State = EntityState.Modified;
-                    }
+                    return Content("Ссылка на XML не верна!");
                 }
+                newProvider.Name = output.Vendor;
+                newProvider.MainOutputFile = output;
+                newProvider.UserSelections.Add(CurrentUserSelection);
+
+                //парсим полученные из файла категории и добавляем их куда надо
+                parser.ParseAllCategories(output.Categories.Values.ToList(), newProvider);
+
                 CurrentUserSelection.AddedProviders.Add(newProvider);
                 _db.Entry(CurrentUserSelection).State = EntityState.Modified;
                 _db.Entry(newProvider).State = EntityState.Added;
