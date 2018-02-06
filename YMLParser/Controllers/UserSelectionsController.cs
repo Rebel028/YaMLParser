@@ -161,7 +161,7 @@ namespace YMLParser.Controllers
                 else
                 {
                     newProvider = provider;
-                    _db.Providers.Add(provider);
+                    _db.Providers.Add(newProvider);
                     _db.SaveChanges();
                 }
 
@@ -171,6 +171,9 @@ namespace YMLParser.Controllers
                 var output = await parser.ParseInitialFile(provider.Link);
                 if (output == null)
                 {
+                    _db.Providers.Remove(newProvider);
+                    _db.Entry(provider).State = EntityState.Deleted;
+                    _db.SaveChanges();
                     return Content("Ссылка на XML не верна!");
                 }
                 newProvider.Name = output.Vendor;
@@ -182,7 +185,7 @@ namespace YMLParser.Controllers
 
                 CurrentUserSelection.AddedProviders.Add(newProvider);
                 _db.Entry(CurrentUserSelection).State = EntityState.Modified;
-                _db.Entry(newProvider).State = EntityState.Added;
+                _db.Entry(newProvider).State = EntityState.Modified;
                 _db.SaveChanges();
                 return RedirectToAction("Index", CurrentUserSelection);
             }

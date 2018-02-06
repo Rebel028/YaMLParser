@@ -461,7 +461,8 @@ namespace YMLParser
             file.FilePath = FilesFolder + file.FileName;
             //проверяем, существует ли папка
             if (!Directory.Exists(FilesFolder)) Directory.CreateDirectory(FilesFolder);
-            var provider = _db.Providers.FirstOrDefault(p => p.Link == link);
+            var providers = _db.Providers.Include(p => p.MainOutputFile).ToList();
+            var provider = providers.FirstOrDefault(p => p.Link == link);
             //Пишем файл
             if (file.Info.Exists)
             {
