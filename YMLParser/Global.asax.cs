@@ -79,10 +79,7 @@ namespace YMLParser
             using (ApplicationDbContext db = new ApplicationDbContext())
             {
                 foreach (var link in db.OutputLinks?.ToList()) //берем каждую ссылку
-                {
-                    var data = db.OutputLinks.Include(l => l.Selected);
-                    link.File = null; //убираем у нее файл
-                    db.SaveChanges();
+                {                    
                     Parser parser = new Parser(db);
                     var output = parser.SelectCategories(link.SelectedLookup); //создаем новый 
                     link.File = parser.SaveFile(output); //добавляем

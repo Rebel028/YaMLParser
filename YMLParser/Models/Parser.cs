@@ -377,7 +377,7 @@ namespace YMLParser
         public XDocument SelectCategories(ILookup<string, string> selectedCategories)
         {
             XDocument result = new XDocument();
-            result.Add(new XElement("root"));
+            result.Add(new XElement("yml_catalog"));
             foreach (var group in selectedCategories)
             {
                 var path = FindProviderFile(group.Key).FilePath;
@@ -411,7 +411,7 @@ namespace YMLParser
         }
 
         /// <summary>
-        /// Сохраняет файл на сервер
+        /// Сохраняет файл на сервер и в БД
         /// </summary>
         /// <param name="output"></param>
         /// <returns></returns>

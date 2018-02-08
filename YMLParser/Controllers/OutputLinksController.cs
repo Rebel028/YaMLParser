@@ -46,7 +46,7 @@ namespace YMLParser.Controllers
             GetCurrentUserInfo();
             GetUserSelection();
 
-            var outputLinks = db.OutputLinks.Include(o => o.UserSelection);
+            var outputLinks = db.OutputLinks.Where(o => o.UserSelection == CurrentUserSelection);
             return PartialView(await outputLinks.ToListAsync());
         }
 
@@ -112,10 +112,13 @@ namespace YMLParser.Controllers
                     
                     var file = parser.SaveFile(output);
 
-                    outputLink.Link = this.Url.Action("Link","OutputLinks", new {id = file.Id}, Request.Url.Scheme);
                     outputLink.UserSelection = CurrentUserSelection;
+                    outputLink.File = file;
                     db.OutputLinks.Add(outputLink);
-                    await db.SaveChangesAsync();
+
+                    await db.SaveChangesAsync();//получаем для ссылки id
+                    outputLink.Link = this.Url.Action("Link", "OutputLinks", new { id = outputLink.Id + "_" + outputLink.Name }, Request.Url.Scheme);
+                    db.Entry(outputLink).State = EntityState.Modified;
                     CurrentUserSelection.ExistingLinks.Add(outputLink);
                     await db.SaveChangesAsync();
 
@@ -192,11 +195,17 @@ namespace YMLParser.Controllers
         }
 
         
-        public async Task<ActionResult> Link(int? id)
+        public async Task<ActionResult> Link(string id)
         {
-            if (id == null) return HttpNotFound();
-            var file = await db.OutputFiles.FindAsync(id);
-            if (file==null)
+            if (string.IsNullOrEmpty(id)) return HttpNotFound();
+            var pars = id.Split('_');
+            var linkId = Int32.Parse(pars[0]);
+            var link = db.OutputLinks
+                .Include(l => l.File)
+                .FirstOrDefault(l => l.Id == linkId);
+            var file = link.File;
+
+            if (file == null || link.Name != pars[1])
             {
                 return HttpNotFound();
             }
