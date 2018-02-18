@@ -28,6 +28,7 @@
         </dd>
 
     </dl>
+    @Html.ActionLink("Посмотреть файл", "GetFile", new {id = Model.MainOutputFile_Id}, new {@class = "btn btn-primary"})
     <h4>
         @Html.DisplayNameFor(model => model.Categories)
     </h4>

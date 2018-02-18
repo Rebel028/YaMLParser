@@ -220,9 +220,6 @@ namespace YMLParser
             {
                 case "name":
                     output.Add(new XElement("name", element.Value));
-                    output.Add(new XElement("model", element.Value));
-                    output.Add(new XElement("metaTitle", element.Value));
-                    output.Add(new XElement("metaDescription", element.Value));
                     break;
                 case "description":
                     output.Add(new XElement("description", element.Value));
@@ -230,7 +227,6 @@ namespace YMLParser
                     output.Add(new XElement("seoKeyword", element.Value));
                     break;
                 case "model":
-                    output.Add(new XElement("name", element.Value));
                     output.Add(new XElement("model", element.Value));
                     output.Add(new XElement("metaTitle", element.Value));
                     output.Add(new XElement("metaDescription", element.Value));
@@ -298,22 +294,32 @@ namespace YMLParser
         /// </summary>
         private static XElement ParseParam(XElement param)
         {
-            switch (param.Attribute("name").ToString().ToLower())
+            var attrName = param.Attribute("name").Value;
+            switch (attrName.ToString().ToLower())
             {
                 case "stock":
                     return new XElement("stock", param.Value);
                 case "вес":
+                case "ves":
+                case "weight":
                     return new XElement("weight", param.Value);
+                case "height":
                 case "высота":
                     return new XElement("height", param.Value);
+                case "width":
                 case "ширина":
                     return new XElement("width", param.Value);
+                case "depth":
+                case "length":
                 case "глубина":
                     return new XElement("length", param.Value);
                 case "material":
-                    return new XElement("material", param.Value);
                 case "материал":
                     return new XElement("material", param.Value);
+                case "цвет":
+                case "cvet":
+                case "color":
+                    return new XElement("color", param.Value);
                 default:
                     return null;
             }
@@ -377,6 +383,7 @@ namespace YMLParser
         public XDocument SelectCategories(ILookup<string, string> selectedCategories)
         {
             XDocument result = new XDocument();
+            result.Declaration = new XDeclaration("1.0", "UTF-8", "yes");
             result.Add(new XElement("yml_catalog"));
             foreach (var group in selectedCategories)
             {
@@ -461,8 +468,10 @@ namespace YMLParser
             file.FilePath = FilesFolder + file.FileName;
             //проверяем, существует ли папка
             if (!Directory.Exists(FilesFolder)) Directory.CreateDirectory(FilesFolder);
+
             var providers = _db.Providers.Include(p => p.MainOutputFile).ToList();
             var provider = providers.FirstOrDefault(p => p.Link == link);
+
             //Пишем файл
             if (file.Info.Exists)
             {
@@ -471,6 +480,14 @@ namespace YMLParser
                     if (file.Info.Length == provider.MainOutputFile.Info.Length) //если файл такой же как и был
                     {
                         return null;
+                    }
+                    else
+                    {
+                        var stream = file.Info.Create();
+                        output.Save(stream);
+                        stream.Close();
+                        _db.OutputFiles.Add(file);
+                        _db.SaveChanges();
                     }
                 }
                 catch (Exception e)
@@ -497,8 +514,9 @@ namespace YMLParser
         /// <param name="providerName"></param>
         private FileOutput FindProviderFile(string providerName)
         {
-            var test = _db.OutputFiles.Where(f => f.Vendor == providerName && f.FileName.StartsWith("Init"));
-            return _db.OutputFiles.First(f => f.Vendor == providerName);
+            var test = _db.OutputFiles.Where(f=>f.Id>0).ToList();
+            var file = test.FirstOrDefault(f => f.Vendor == providerName);
+            return _db.OutputFiles.FirstOrDefault(f => f.Vendor == providerName);
         }
 
 

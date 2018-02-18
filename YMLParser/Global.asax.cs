@@ -57,7 +57,7 @@ namespace YMLParser
             using (var db = new ApplicationDbContext())
             {
                 var providers = db.Providers;
-                if (providers != null)
+                if (providers.Local.Count > 0)
                 {
                     foreach (Provider provider in providers.ToList())
                     {
@@ -78,12 +78,18 @@ namespace YMLParser
         {
             using (ApplicationDbContext db = new ApplicationDbContext())
             {
-                foreach (var link in db.OutputLinks?.ToList()) //берем каждую ссылку
-                {                    
-                    Parser parser = new Parser(db);
-                    var output = parser.SelectCategories(link.SelectedLookup); //создаем новый 
-                    link.File = parser.SaveFile(output); //добавляем
-                    db.SaveChanges();
+                var links = db.OutputLinks.Include(l => l.File);
+
+                if (links.Count() > 0)
+                {
+                    foreach (var link in links.ToList()) //берем каждую ссылку
+                    {
+                        Parser parser = new Parser(db);
+                        var output = parser.SelectCategories(link.SelectedLookup); //создаем новый 
+                        db.OutputFiles.Remove(link.File);
+                        link.File = parser.SaveFile(output); //добавляем
+                        db.SaveChanges();
+                    }
                 }
             }
         }

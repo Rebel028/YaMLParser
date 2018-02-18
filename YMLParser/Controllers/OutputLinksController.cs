@@ -1,14 +1,14 @@
-﻿using System;
+﻿using Microsoft.AspNet.Identity;
+using Microsoft.AspNet.Identity.Owin;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Entity;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Net;
+using System.Threading.Tasks;
 using System.Web;
 using System.Web.Mvc;
-using Microsoft.AspNet.Identity;
-using Microsoft.AspNet.Identity.Owin;
 using YMLParser.Models;
 
 namespace YMLParser.Controllers
@@ -96,24 +96,25 @@ namespace YMLParser.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> Create([Bind(Include = "Id,Name,UserSelectionId")] OutputLink outputLink,
-            List<string>selected)
+            List<string> selected)
         {
-            if (ModelState.IsValid && selected.Count>0)
+            if (ModelState.IsValid && selected.Count > 0)
             {
                 GetCurrentUserInfo();
                 GetUserSelection();
 
                 try
                 {
-                    outputLink.Selected = string.Join(";",selected.ToArray());
+                    outputLink.Selected = string.Join(";", selected.ToArray());
 
                     var parser = new Parser(db);
                     var output = parser.SelectCategories(outputLink.SelectedLookup);
-                    
+
                     var file = parser.SaveFile(output);
 
                     outputLink.UserSelection = CurrentUserSelection;
                     outputLink.File = file;
+                    outputLink.Name = outputLink.Name.Contains("_") ? outputLink.Name.Replace("_", string.Empty) : outputLink.Name;
                     db.OutputLinks.Add(outputLink);
 
                     await db.SaveChangesAsync();//получаем для ссылки id
@@ -191,10 +192,10 @@ namespace YMLParser.Controllers
             OutputLink outputLink = await db.OutputLinks.FindAsync(id);
             db.OutputLinks.Remove(outputLink);
             await db.SaveChangesAsync();
-            return RedirectToAction("Index");
+            return RedirectToAction("Index", "UserSelections");
         }
 
-        
+
         public async Task<ActionResult> Link(string id)
         {
             if (string.IsNullOrEmpty(id)) return HttpNotFound();
@@ -214,6 +215,7 @@ namespace YMLParser.Controllers
             return File(fileContent, file.FileType);
         }
 
+        
         protected override void Dispose(bool disposing)
         {
             if (disposing)

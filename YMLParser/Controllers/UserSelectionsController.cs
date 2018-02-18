@@ -1,18 +1,16 @@
-﻿using System;
+﻿using Microsoft.AspNet.Identity;
+using Microsoft.AspNet.Identity.Owin;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Entity;
 using System.Data.Entity.Validation;
 using System.Diagnostics;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Net;
-using System.Text;
+using System.Threading.Tasks;
 using System.Web;
 using System.Web.Mvc;
-using Microsoft.AspNet.Identity;
-using Microsoft.AspNet.Identity.Owin;
-using WebGrease.Css.Extensions;
 using YMLParser.Models;
 
 namespace YMLParser.Controllers
@@ -21,30 +19,6 @@ namespace YMLParser.Controllers
     public class UserSelectionsController : Controller
     {
         private ApplicationDbContext _db = new ApplicationDbContext();
-
-        private ApplicationUserManager UserManager { get; set; }
-        private ApplicationUser CurrentUser { get; set; }
-        private  UserSelection CurrentUserSelection { get; set; }
-
-        private void GetCurrentUserInfo()
-        {
-            if (User.Identity.IsAuthenticated)
-            {
-                UserManager = HttpContext.GetOwinContext().GetUserManager<ApplicationUserManager>();
-                CurrentUser = UserManager.FindById(User.Identity.GetUserId());
-            }
-        }
-
-        private void GetUserSelection()
-        {
-            CurrentUserSelection = _db.UserSelections.First(s => s.UserId == CurrentUser.Id);
-            var providers = _db.Providers.Include(p => p.UserSelections);
-            var links = _db.OutputLinks.Include(p => p.UserSelection);
-
-            ViewBag.Providers = providers.ToList();
-            ViewBag.Links = CurrentUserSelection.ExistingLinks.ToList();
-            ViewBag.Link = links.ToList();
-        }
 
         private void CreateUserSelection()
         {
@@ -76,6 +50,26 @@ namespace YMLParser.Controllers
             }
         }
 
+        private void GetCurrentUserInfo()
+        {
+            if (User.Identity.IsAuthenticated)
+            {
+                UserManager = HttpContext.GetOwinContext().GetUserManager<ApplicationUserManager>();
+                CurrentUser = UserManager.FindById(User.Identity.GetUserId());
+            }
+        }
+
+        private void GetUserSelection()
+        {
+            CurrentUserSelection = _db.UserSelections.First(s => s.UserId == CurrentUser.Id);
+            var providers = _db.Providers.Include(p => p.UserSelections);
+            var links = _db.OutputLinks.Include(p => p.UserSelection);
+
+            ViewBag.Providers = providers.ToList();
+            ViewBag.Links = CurrentUserSelection.ExistingLinks.ToList();
+            ViewBag.Link = links.ToList();
+        }
+
         private bool UserSelectionExists()
         {
             if (CurrentUser != null && _db.UserSelections.Any(s => s.UserId == CurrentUser.Id))
@@ -88,45 +82,20 @@ namespace YMLParser.Controllers
             }
         }
 
-        // GET: UserSelections
-        [Authorize]
-        public async Task<ActionResult> Index()
+        private ApplicationUser CurrentUser { get; set; }
+        private UserSelection CurrentUserSelection { get; set; }
+
+        private ApplicationUserManager UserManager { get; set; }
+
+
+
+        protected override void Dispose(bool disposing)
         {
-            GetCurrentUserInfo();
-
-            if (!UserSelectionExists())
+            if (disposing)
             {
-                CreateUserSelection();
+                _db.Dispose();
             }
-            else
-            {
-                GetUserSelection();
-            }
-
-            return View(CurrentUserSelection);
-        }
-
-        // GET: UserSelections/Details/5
-        public async Task<ActionResult> Details(int? id)
-        {
-            GetCurrentUserInfo();
-            GetUserSelection();
-            if (id == null)
-            {
-                return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
-            }
-            if (CurrentUserSelection == null)
-            {
-                return HttpNotFound();
-            }
-            Provider provider = CurrentUserSelection.AddedProviders.FirstOrDefault(p => p.Id == id);
-            if (provider == null)
-            {
-                return HttpNotFound();
-            }
-            _db.Providers.Include(p => p.Categories);
-            ViewBag.Categories = provider.Categories.ToList();
-            return View(provider);
+            base.Dispose(disposing);
         }
 
         // POST: UserSelections/add
@@ -148,49 +117,54 @@ namespace YMLParser.Controllers
 
             if (ModelState.IsValid)
             {
+                provider.Link = provider.Link.Trim();
+
                 Provider newProvider;
                 //пробиваем поставщика по базе
-                if (_db.Providers.Any(p => p.Link == provider.Link))
+                if (_db.Providers.Any(p => p.Link == provider.Link))//если встречается в БД
                 {
                     newProvider = await _db.Providers.FirstOrDefaultAsync(p => p.Link == provider.Link);
-                    if (newProvider.MainOutputFile_Id!=null)
+                    if (!newProvider.UserSelections.Contains(CurrentUserSelection))
                     {
-                        return PartialView(newProvider);
+                        newProvider.UserSelections.Add(CurrentUserSelection);
+                        CurrentUserSelection.AddedProviders.Add(newProvider);
+                        _db.Entry(newProvider).State = EntityState.Modified;
+                        _db.Entry(CurrentUserSelection).State = EntityState.Modified;
+                        _db.SaveChanges();
                     }
                 }
-                else
+                else //если нет
                 {
                     newProvider = provider;
                     _db.Providers.Add(newProvider);
                     _db.SaveChanges();
-                }
 
-                //запускаем парсер
-                Parser parser = new Parser(_db);
-                //получаем физический файл
-                var output = await parser.ParseInitialFile(provider.Link);
-                if (output == null)
-                {
-                    _db.Providers.Remove(newProvider);
-                    _db.Entry(provider).State = EntityState.Deleted;
+                    //запускаем парсер
+                    Parser parser = new Parser(_db);
+                    //получаем физический файл
+                    var output = await parser.ParseInitialFile(provider.Link);
+                    if (output == null)
+                    {
+                        _db.Providers.Remove(newProvider);
+                        _db.Entry(provider).State = EntityState.Deleted;
+                        _db.SaveChanges();
+                        return Content("Ссылка на XML не верна!");
+                    }
+                    newProvider.Name = output.Vendor;
+                    newProvider.MainOutputFile = output;
+                    newProvider.UserSelections.Add(CurrentUserSelection);
+
+                    //парсим полученные из файла категории и добавляем их куда надо
+                    parser.ParseAllCategories(output.Categories.Values.ToList(), newProvider);
+
+                    CurrentUserSelection.AddedProviders.Add(newProvider);
+                    _db.Entry(CurrentUserSelection).State = EntityState.Modified;
+                    _db.Entry(newProvider).State = EntityState.Modified;
                     _db.SaveChanges();
-                    return Content("Ссылка на XML не верна!");
                 }
-                newProvider.Name = output.Vendor;
-                newProvider.MainOutputFile = output;
-                newProvider.UserSelections.Add(CurrentUserSelection);
-
-                //парсим полученные из файла категории и добавляем их куда надо
-                parser.ParseAllCategories(output.Categories.Values.ToList(), newProvider);
-
-                CurrentUserSelection.AddedProviders.Add(newProvider);
-                _db.Entry(CurrentUserSelection).State = EntityState.Modified;
-                _db.Entry(newProvider).State = EntityState.Modified;
-                _db.SaveChanges();
-                return RedirectToAction("Index", CurrentUserSelection);
             }
 
-            return PartialView(provider);
+            return RedirectToAction("Index", CurrentUserSelection);
         }
 
         //// GET: UserSelections/Edit/5
@@ -261,7 +235,7 @@ namespace YMLParser.Controllers
             CurrentUserSelection.AddedProviders.Remove(provider);
             provider.UserSelections.Remove(CurrentUserSelection);
             //удаляем поставщика если больше никем не используется
-            if (provider.UserSelections.Count<1)
+            if (provider.UserSelections.Count < 1)
             {
                 _db.Entry(provider).State = EntityState.Deleted;
                 var remove = _db.OutputFiles.Where(f => f.Vendor == provider.Name);
@@ -278,15 +252,60 @@ namespace YMLParser.Controllers
             return RedirectToAction("Index");
         }
 
-        
-
-        protected override void Dispose(bool disposing)
+        // GET: UserSelections/Details/5
+        public async Task<ActionResult> Details(int? id)
         {
-            if (disposing)
+            GetCurrentUserInfo();
+            GetUserSelection();
+            if (id == null)
             {
-                _db.Dispose();
+                return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
-            base.Dispose(disposing);
+            if (CurrentUserSelection == null)
+            {
+                return HttpNotFound();
+            }
+            Provider provider = _db.Providers.Include(p => p.Categories).FirstOrDefault(p => p.Id == id);
+            if (provider == null || !provider.UserSelections.Contains(CurrentUserSelection))
+            {
+                return HttpNotFound();
+            }
+            ViewBag.Categories = provider.Categories.ToList();
+            return View(provider);
+        }
+
+        // GET: UserSelections
+        [Authorize]
+        public async Task<ActionResult> Index()
+        {
+            GetCurrentUserInfo();
+
+            if (!UserSelectionExists())
+            {
+                CreateUserSelection();
+            }
+            else
+            {
+                GetUserSelection();
+            }
+
+            return View(CurrentUserSelection);
+        }
+
+        public async Task<ActionResult> GetFile(int? id)
+        {
+            if (id != null)
+            {
+                var file = await _db.OutputFiles.FindAsync(id);
+
+                if (file != null)
+                {
+                    var fileContent = System.IO.File.ReadAllBytes(file.FilePath);
+
+                    return File(fileContent, file.FileType);
+                }
+            }
+            return HttpNotFound();
         }
     }
 }
